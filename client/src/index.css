@@ -1,0 +1,26 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Josefin Sans", sans-serif;
+  --color-sika-yellow: #f4c300;
+  --color-sika-yellow-soft: #fff6d6;
+  --color-sika-red: #e41b23;
+  --color-sika-red-dark: #c41219;
+  --color-ink: #1c1c1c;
+  --color-muted: #5e6570;
+  --color-line: #e6e8eb;
+  --color-canvas: #f4f5f7;
+  --color-panel: #1c1c1c;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background: var(--color-canvas);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+}
+
+#root {
+  min-height: 100vh;
+}
