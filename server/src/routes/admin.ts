@@ -207,23 +207,33 @@ router.get(
 
 router.post(
   "/ads",
-  adImageUpload.single("image"),
+  adImageUpload.fields([
+    { name: "imageDesktop", maxCount: 1 },
+    { name: "imageMobile", maxCount: 1 },
+  ]),
   asyncHandler(async (req, res) => {
     const parsed = adBodySchema.safeParse(req.body);
     if (!parsed.success) {
       throw new AppError(400, "Certains champs sont invalides.", "VALIDATION");
     }
-    if (!req.file) {
-      throw new AppError(400, "Une image est requise.", "VALIDATION");
+    const files = req.files as { imageDesktop?: Express.Multer.File[]; imageMobile?: Express.Multer.File[] } | undefined;
+    const desktopFile = files?.imageDesktop?.[0];
+    const mobileFile = files?.imageMobile?.[0];
+    if (!desktopFile || !mobileFile) {
+      throw new AppError(400, "Les images PC et mobile sont requises.", "VALIDATION");
     }
 
     const count = await AdModel.countDocuments();
+    const imageUrlDesktop = adImagePublicPath(desktopFile.filename);
+    const imageUrlMobile = adImagePublicPath(mobileFile.filename);
     const ad = await AdModel.create({
       title: parsed.data.title,
       linkUrl: parsed.data.linkUrl ?? "",
       sortOrder: parsed.data.sortOrder ?? count,
       active: parsed.data.active ?? true,
-      imageUrl: adImagePublicPath(req.file.filename),
+      imageUrlDesktop,
+      imageUrlMobile,
+      imageUrl: imageUrlDesktop,
     });
 
     res.status(201).json({ ad: toPublicAd(ad) });
@@ -232,7 +242,10 @@ router.post(
 
 router.patch(
   "/ads/:id",
-  adImageUpload.single("image"),
+  adImageUpload.fields([
+    { name: "imageDesktop", maxCount: 1 },
+    { name: "imageMobile", maxCount: 1 },
+  ]),
   asyncHandler(async (req, res) => {
     const ad = await AdModel.findById(req.params.id);
     if (!ad) {
@@ -248,7 +261,18 @@ router.patch(
     if (parsed.data.linkUrl !== undefined) ad.linkUrl = parsed.data.linkUrl;
     if (parsed.data.sortOrder !== undefined) ad.sortOrder = parsed.data.sortOrder;
     if (parsed.data.active !== undefined) ad.active = parsed.data.active;
-    if (req.file) ad.imageUrl = adImagePublicPath(req.file.filename);
+
+    const files = req.files as { imageDesktop?: Express.Multer.File[]; imageMobile?: Express.Multer.File[] } | undefined;
+    const desktopFile = files?.imageDesktop?.[0];
+    const mobileFile = files?.imageMobile?.[0];
+    if (desktopFile) {
+      const path = adImagePublicPath(desktopFile.filename);
+      ad.imageUrlDesktop = path;
+      ad.imageUrl = path;
+    }
+    if (mobileFile) {
+      ad.imageUrlMobile = adImagePublicPath(mobileFile.filename);
+    }
 
     await ad.save();
     res.json({ ad: toPublicAd(ad) });

@@ -4,8 +4,9 @@
 Show a rotatable ads rail in the partner area only, editable by admin at any time.
 
 ## Content
-- Multiple ads: image + optional click URL + title/alt + sort order + active flag
+- Multiple ads: desktop image + mobile image + optional click URL + title/alt + sort order + active flag
 - Images stored under `/uploads/ads/`
+- Recommended sizes: desktop **800×1000** (4:5), mobile **1200×400** (3:1)
 
 ## Placement
 - Partner `AppShell` only (after login)

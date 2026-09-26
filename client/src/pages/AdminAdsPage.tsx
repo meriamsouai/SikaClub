@@ -34,7 +34,8 @@ export function AdminAdsPage() {
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [form, setForm] = useState(emptyForm);
-  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [desktopFile, setDesktopFile] = useState<File | null>(null);
+  const [mobileFile, setMobileFile] = useState<File | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
@@ -61,7 +62,8 @@ export function AdminAdsPage() {
       title: ad.title,
       linkUrl: ad.linkUrl,
     });
-    setImageFile(null);
+    setDesktopFile(null);
+    setMobileFile(null);
     setMessage(null);
     setError(null);
   }
@@ -69,7 +71,8 @@ export function AdminAdsPage() {
   function resetForm() {
     setEditingId(null);
     setForm(emptyForm);
-    setImageFile(null);
+    setDesktopFile(null);
+    setMobileFile(null);
   }
 
   async function handleSubmit(event: FormEvent) {
@@ -81,14 +84,15 @@ export function AdminAdsPage() {
       const body = new FormData();
       body.set("title", form.title.trim());
       body.set("linkUrl", form.linkUrl.trim());
-      if (imageFile) body.set("image", imageFile);
+      if (desktopFile) body.set("imageDesktop", desktopFile);
+      if (mobileFile) body.set("imageMobile", mobileFile);
 
       if (editingId) {
         await updateAd(editingId, body);
         setMessage(copy.adUpdated);
       } else {
-        if (!imageFile) {
-          setError(copy.adImageRequired);
+        if (!desktopFile || !mobileFile) {
+          setError(copy.adImagesRequired);
           setSubmitting(false);
           return;
         }
@@ -148,17 +152,30 @@ export function AdminAdsPage() {
           value={form.linkUrl}
           onChange={(event) => setForm((current) => ({ ...current, linkUrl: event.target.value }))}
         />
-        <label className="block text-sm font-medium text-ink">
-          {copy.adImage}
-          <input
-            type="file"
-            accept="image/*"
-            className="mt-1.5 block w-full text-sm"
-            onChange={(event) => setImageFile(event.target.files?.[0] ?? null)}
-            required={!editingId}
-          />
-          <span className="mt-1 block text-xs text-muted">{copy.adImageHint}</span>
-        </label>
+        <div className="grid gap-4 sm:grid-cols-2">
+          <label className="block text-sm font-medium text-ink">
+            {copy.adImageDesktop}
+            <input
+              type="file"
+              accept="image/*"
+              className="mt-1.5 block w-full text-sm"
+              onChange={(event) => setDesktopFile(event.target.files?.[0] ?? null)}
+              required={!editingId}
+            />
+            <span className="mt-1 block text-xs text-muted">{copy.adImageDesktopHint}</span>
+          </label>
+          <label className="block text-sm font-medium text-ink">
+            {copy.adImageMobile}
+            <input
+              type="file"
+              accept="image/*"
+              className="mt-1.5 block w-full text-sm"
+              onChange={(event) => setMobileFile(event.target.files?.[0] ?? null)}
+              required={!editingId}
+            />
+            <span className="mt-1 block text-xs text-muted">{copy.adImageMobileHint}</span>
+          </label>
+        </div>
         <div className="flex flex-wrap gap-3">
           <button
             type="submit"
@@ -192,12 +209,35 @@ export function AdminAdsPage() {
               key={ad.id}
               className={`rounded-lg border bg-white p-4 ${ad.active ? "border-line" : "border-dashed border-muted opacity-80"}`}
             >
-              <div className="mb-3 aspect-[3/4] overflow-hidden rounded-md bg-sika-yellow-soft">
-                {ad.imageUrl ? (
-                  <img src={adImageSrc(ad.imageUrl)} alt="" className="h-full w-full object-cover" />
-                ) : (
-                  <div className="flex h-full items-center justify-center text-xs text-muted">{copy.noImage}</div>
-                )}
+              <div className="mb-3 grid grid-cols-2 gap-2">
+                <div>
+                  <p className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-muted">{copy.adImageDesktop}</p>
+                  <div className="aspect-[4/5] overflow-hidden rounded-md bg-sika-yellow-soft">
+                    {ad.imageUrlDesktop || ad.imageUrl ? (
+                      <img
+                        src={adImageSrc(ad.imageUrlDesktop || ad.imageUrl)}
+                        alt=""
+                        className="h-full w-full object-cover"
+                      />
+                    ) : (
+                      <div className="flex h-full items-center justify-center text-xs text-muted">{copy.noImage}</div>
+                    )}
+                  </div>
+                </div>
+                <div>
+                  <p className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-muted">{copy.adImageMobile}</p>
+                  <div className="aspect-[3/1] overflow-hidden rounded-md bg-sika-yellow-soft">
+                    {ad.imageUrlMobile || ad.imageUrlDesktop || ad.imageUrl ? (
+                      <img
+                        src={adImageSrc(ad.imageUrlMobile || ad.imageUrlDesktop || ad.imageUrl)}
+                        alt=""
+                        className="h-full w-full object-cover"
+                      />
+                    ) : (
+                      <div className="flex h-full items-center justify-center text-xs text-muted">{copy.noImage}</div>
+                    )}
+                  </div>
+                </div>
               </div>
               <h3 className="text-sm font-semibold text-ink">{ad.title}</h3>
               <p className="mt-1 truncate text-xs text-muted">{ad.linkUrl || copy.adNoLink}</p>

@@ -64,10 +64,20 @@ function adImageSrc(imageUrl: string) {
   return `${API_URL}${imageUrl}`;
 }
 
-function AdSlide({ ad, className }: { ad: PublicAd; className: string }) {
-  const image = (
-    <img src={adImageSrc(ad.imageUrl)} alt={ad.title} className={className} />
-  );
+function AdSlide({
+  ad,
+  variant,
+  className,
+}: {
+  ad: PublicAd;
+  variant: "desktop" | "mobile";
+  className: string;
+}) {
+  const src =
+    variant === "mobile"
+      ? ad.imageUrlMobile || ad.imageUrlDesktop || ad.imageUrl
+      : ad.imageUrlDesktop || ad.imageUrl;
+  const image = <img src={adImageSrc(src)} alt={ad.title} className={className} />;
   if (!ad.linkUrl) return image;
   return (
     <a href={ad.linkUrl} target="_blank" rel="noopener noreferrer" className="block h-full w-full">
@@ -351,7 +361,7 @@ export function AdsRail({ variant }: { variant: "desktop" | "mobile" }) {
         {current ? (
           <div className="mx-auto w-full max-w-5xl overflow-hidden rounded-xl border border-line bg-white shadow-sm">
             <div className="relative h-32 overflow-hidden sm:h-40">
-              <AdSlide ad={current} className="h-full w-full object-cover" />
+              <AdSlide ad={current} variant="mobile" className="h-full w-full object-cover" />
               <AdLabel text={label} />
             </div>
             {ads.length > 1 ? (
@@ -382,7 +392,7 @@ export function AdsRail({ variant }: { variant: "desktop" | "mobile" }) {
         {current ? (
           <div className="overflow-hidden rounded-xl border border-line bg-white shadow-sm">
             <div className="relative aspect-[4/5] w-full overflow-hidden">
-              <AdSlide ad={current} className="absolute inset-0 h-full w-full object-cover" />
+              <AdSlide ad={current} variant="desktop" className="absolute inset-0 h-full w-full object-cover" />
               <AdLabel text={label} />
             </div>
             {ads.length > 1 ? (

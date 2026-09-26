@@ -38,6 +38,8 @@ export type PublicAd = {
   id: string;
   title: string;
   imageUrl: string;
+  imageUrlDesktop: string;
+  imageUrlMobile: string;
   linkUrl: string;
   active: boolean;
   sortOrder: number;
