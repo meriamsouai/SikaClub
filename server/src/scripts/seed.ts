@@ -162,9 +162,6 @@ async function seed() {
   if (env.isProduction && process.env.SEED_ALLOW !== "true") {
     throw new Error("Refusing to seed in production. Set SEED_ALLOW=true to override.");
   }
-  if (env.seedPartnerPassword.length < 10) {
-    throw new Error("SEED_PARTNER_PASSWORD must be at least 10 characters.");
-  }
   if (env.seedAdminPassword.length < 10) {
     throw new Error("SEED_ADMIN_PASSWORD must be at least 10 characters.");
   }
@@ -173,23 +170,6 @@ async function seed() {
   fs.mkdirSync(path.resolve(__dirname, "../../uploads/gifts"), { recursive: true });
   fs.mkdirSync(path.resolve(__dirname, "../../uploads/invoices"), { recursive: true });
   fs.mkdirSync(path.resolve(__dirname, "../../uploads/ads"), { recursive: true });
-
-  const partnerPassword = await hashPassword(env.seedPartnerPassword);
-  const partner = await UserModel.findOneAndUpdate(
-    { email: env.seedPartnerEmail },
-    {
-      firstName: "Alex",
-      surname: "Martin",
-      email: env.seedPartnerEmail,
-      password: partnerPassword,
-      phone: "+33 1 23 45 67 89",
-      companyName: "Entreprise Démo",
-      role: "client",
-      status: "approved",
-    },
-    { upsert: true, returnDocument: "after", setDefaultsOnInsert: true },
-  );
-  if (partner) await ensureWelcomeBonus(partner);
 
   const adminPassword = await hashPassword(env.seedAdminPassword);
   await UserModel.findOneAndUpdate(
@@ -253,9 +233,8 @@ async function seed() {
     console.log(`Gifts already present (${giftCount}), skipped gift seed.`);
   }
 
-  console.log(`Approved partner ready: ${env.seedPartnerEmail}`);
   console.log(`Admin ready: ${env.seedAdminEmail}`);
-  console.log("Passwords come from SEED_PARTNER_PASSWORD / SEED_ADMIN_PASSWORD in server/.env");
+  console.log("Password comes from SEED_ADMIN_PASSWORD in server/.env");
   await mongoose.disconnect();
 }
 

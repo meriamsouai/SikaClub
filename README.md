@@ -55,15 +55,14 @@ npm run dev
 npm run seed
 ```
 
-Default credentials (from `server/.env`):
+Default admin credentials (from `server/.env`):
 
 | Role | Email | Password |
 |------|-------|----------|
-| Partner | `partenaire@example.com` | `DemoPartner123!` |
 | Admin | `admin@example.com` | `DemoAdmin123!` |
 
-- Partner lands on **Ajouter une facture**
 - Admin lands on `/admin` (pending accounts, clients, leaderboard, gifts)
+- Partners sign up themselves and wait for admin approval
 
 Approving a pending signup generates a password and emails it via SMTP. If SMTP fails, the account stays pending.
 

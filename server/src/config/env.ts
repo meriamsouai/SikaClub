@@ -31,8 +31,6 @@ export const env = {
   jwtAccessSecret: secret("JWT_ACCESS_SECRET"),
   jwtRefreshSecret: secret("JWT_REFRESH_SECRET"),
   clientOrigin: process.env.CLIENT_ORIGIN ?? "http://localhost:5173",
-  seedPartnerEmail: process.env.SEED_PARTNER_EMAIL ?? "partenaire@example.com",
-  seedPartnerPassword: process.env.SEED_PARTNER_PASSWORD ?? "DemoPartner123!",
   seedAdminEmail: process.env.SEED_ADMIN_EMAIL ?? "admin@example.com",
   seedAdminPassword: process.env.SEED_ADMIN_PASSWORD ?? "DemoAdmin123!",
   smtpHost: process.env.SMTP_HOST ?? "",
