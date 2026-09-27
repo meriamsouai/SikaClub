@@ -166,12 +166,6 @@ export function AdminInvoicesPage() {
                     </li>
                   ))}
                 </ul>
-                {invoice.clientProblemReport ? (
-                  <p className="mt-3 rounded-md border border-line bg-canvas px-3 py-2 text-sm">
-                    <span className="font-semibold">{messages.invoices.clientReportLabel}:</span>{" "}
-                    {invoice.clientProblemReport}
-                  </p>
-                ) : null}
                 <div className="mt-4 flex flex-wrap gap-3">
                   {(invoice.fileUrls?.length ? invoice.fileUrls : [invoice.fileUrl]).map(
                     (url, index, list) => (
@@ -231,7 +225,6 @@ export function AdminInvoicesPage() {
                   <th className="px-4 py-3 font-medium">{messages.admin.pointsAwarded}</th>
                   <th className="px-4 py-3 font-medium">{messages.invoices.status}</th>
                   <th className="px-4 py-3 font-medium">{messages.invoices.adminNote}</th>
-                  <th className="px-4 py-3 font-medium">{messages.admin.clientReportCol}</th>
                   <th className="px-4 py-3 font-medium">{messages.invoices.file}</th>
                 </tr>
               </thead>
@@ -287,13 +280,6 @@ export function AdminInvoicesPage() {
                       <td className="px-4 py-3">
                         {invoice.adminNote?.trim() ? (
                           <p className="max-w-[14rem] leading-5">{invoice.adminNote}</p>
-                        ) : (
-                          <span className="text-muted">{messages.invoices.adminNoteEmpty}</span>
-                        )}
-                      </td>
-                      <td className="px-4 py-3">
-                        {invoice.clientProblemReport?.trim() ? (
-                          <p className="max-w-[14rem] leading-5 text-ink">{invoice.clientProblemReport}</p>
                         ) : (
                           <span className="text-muted">{messages.invoices.adminNoteEmpty}</span>
                         )}

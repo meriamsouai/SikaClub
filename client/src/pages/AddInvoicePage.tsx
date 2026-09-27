@@ -702,12 +702,9 @@ export function AddInvoicePage() {
                   {step1Done ? "✓" : "1"}
                 </span>
                 <div className="min-w-0 flex-1">
-                  <h2 className="text-base font-semibold text-ink sm:text-lg">{copy.productsTitle}</h2>
-                  {wizardOpen ? (
-                    <p className="mt-0.5 text-xs font-semibold text-sika-red sm:text-sm">{wizardSubstepTitle}</p>
-                  ) : (
-                    <p className="mt-0.5 text-xs text-muted sm:text-sm">{copy.addedProducts}</p>
-                  )}
+                  <h2 className="text-base font-semibold text-ink sm:text-lg">
+                    {wizardOpen ? wizardSubstepTitle : copy.addedProducts}
+                  </h2>
                 </div>
               </div>
 
@@ -1055,13 +1052,13 @@ export function AddInvoicePage() {
               ) : (
                 <div className="space-y-4">
                   {renderLinesTable(true)}
-                  <div className="space-y-3 rounded-lg border border-line bg-canvas/40 p-4">
+                  <div className="space-y-3 rounded-lg border-2 border-sika-yellow bg-sika-yellow-soft p-4">
                     <p className="text-sm font-medium text-ink">{copy.afterAddChoice}</p>
                     <div className="flex flex-col gap-2 sm:flex-row">
                       <button
                         type="button"
                         onClick={openWizard}
-                        className="inline-flex h-11 flex-1 items-center justify-center rounded-lg border border-line bg-white px-4 text-sm font-semibold text-ink hover:border-sika-red hover:text-sika-red"
+                        className="inline-flex h-11 flex-1 items-center justify-center rounded-lg border border-sika-yellow bg-white px-4 text-sm font-semibold text-ink hover:bg-sika-yellow/40"
                       >
                         {copy.addAnother}
                       </button>
