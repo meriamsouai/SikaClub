@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { asyncHandler } from "../lib/asyncHandler";
 import { recordAdminAction } from "../lib/audit";
-import { ensureWelcomeBonus } from "../lib/pointsLedger";
+import { ensureWelcomeBonus, lifetimePointsByUserIds } from "../lib/pointsLedger";
 import { generateTemporaryPassword } from "../lib/generatePassword";
 import { sendAccountApprovedEmail, sendAdminInviteEmail } from "../lib/mail";
 import { hashPassword } from "../lib/password";
@@ -123,18 +123,87 @@ router.get(
   }),
 );
 
+router.post(
+  "/clients/:id/ban",
+  asyncHandler(async (req, res) => {
+    const user = await UserModel.findById(req.params.id);
+    if (!user || user.role !== "client") {
+      throw new AppError(404, "Compte introuvable.", "NOT_FOUND");
+    }
+    if (user.status === "banned") {
+      throw new AppError(400, "Ce compte est déjà banni.", "VALIDATION");
+    }
+    if (user.status === "pending" || user.status === "rejected") {
+      throw new AppError(400, "Seuls les comptes approuvés peuvent être bannis.", "VALIDATION");
+    }
+
+    user.status = "banned";
+    await user.save();
+
+    await recordAdminAction({
+      actor: actorFrom(req),
+      action: "client.ban",
+      targetType: "user",
+      targetId: user._id.toString(),
+      summary: `Partenaire banni : ${user.email}`,
+    });
+
+    res.json({ user: toPublicUser(user), message: "Compte banni." });
+  }),
+);
+
+router.post(
+  "/clients/:id/unban",
+  asyncHandler(async (req, res) => {
+    const user = await UserModel.findById(req.params.id);
+    if (!user || user.role !== "client") {
+      throw new AppError(404, "Compte introuvable.", "NOT_FOUND");
+    }
+    if (user.status !== "banned") {
+      throw new AppError(400, "Ce compte n’est pas banni.", "VALIDATION");
+    }
+
+    user.status = "approved";
+    await user.save();
+
+    await recordAdminAction({
+      actor: actorFrom(req),
+      action: "client.unban",
+      targetType: "user",
+      targetId: user._id.toString(),
+      summary: `Partenaire réactivé : ${user.email}`,
+    });
+
+    res.json({ user: toPublicUser(user), message: "Compte réactivé." });
+  }),
+);
+
 router.get(
   "/leaderboard",
   asyncHandler(async (_req, res) => {
-    const users = await UserModel.find({ role: "client", status: "approved" })
-      .sort({ totalPoints: -1, surname: 1 })
-      .limit(50);
-    res.json({
-      users: users.map((user, index) => ({
-        ...toPublicUser(user),
+    const users = await UserModel.find({ role: "client", status: "approved" }).limit(200);
+    const lifetimeMap = await lifetimePointsByUserIds(users.map((user) => user._id));
+    const ranked = users
+      .map((user) => {
+        const lifetimePoints = lifetimeMap.get(user._id.toString()) ?? 0;
+        return {
+          ...toPublicUser(user),
+          lifetimePoints,
+          currentPoints: user.totalPoints,
+        };
+      })
+      .sort((a, b) => {
+        if (b.lifetimePoints !== a.lifetimePoints) return b.lifetimePoints - a.lifetimePoints;
+        if (b.currentPoints !== a.currentPoints) return b.currentPoints - a.currentPoints;
+        return a.surname.localeCompare(b.surname);
+      })
+      .slice(0, 50)
+      .map((user, index) => ({
+        ...user,
         rank: index + 1,
-      })),
-    });
+      }));
+
+    res.json({ users: ranked });
   }),
 );
 

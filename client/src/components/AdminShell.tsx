@@ -4,7 +4,6 @@ import { useAuth } from "../context/AuthContext";
 import { useLanguage } from "../context/LanguageContext";
 import { isSuperAdmin } from "../lib/roles";
 import { AuthFooter } from "./AuthFooter";
-import { LanguageSwitcher } from "./LanguageSwitcher";
 
 function navClass(isActive: boolean) {
   return `flex items-center gap-3 whitespace-nowrap border-l-2 py-2.5 text-sm font-medium transition-colors ${
@@ -51,15 +50,12 @@ export function AdminShell() {
       <div className="flex flex-1">
         <aside className="group relative z-20 hidden w-16 shrink-0 lg:block">
           <div className="absolute inset-y-0 left-0 flex w-16 flex-col overflow-hidden border-r border-sika-yellow bg-white transition-[width,box-shadow] duration-200 ease-out group-hover:w-64 group-hover:shadow-lg">
-            <div className="flex items-center justify-between gap-2 border-b border-line px-3 py-4">
+            <div className="flex items-center border-b border-line px-3 py-4">
               <img
                 src="/images/logo-club.png"
                 alt={messages.meta.title}
                 className="h-10 w-10 shrink-0 object-contain group-hover:h-auto group-hover:w-24"
               />
-              <div className="hidden group-hover:block">
-                <LanguageSwitcher />
-              </div>
             </div>
             <p className="hidden px-4 pt-3 text-xs font-semibold uppercase tracking-wide text-muted group-hover:block">
               {messages.admin.workspace}
@@ -147,7 +143,6 @@ export function AdminShell() {
                 <img src="/images/logo-club.png" alt={messages.meta.title} className="h-auto w-24 object-contain" />
                 <p className="mt-2 text-xs font-semibold uppercase tracking-wide text-muted">{messages.admin.workspace}</p>
               </div>
-              <LanguageSwitcher />
             </div>
             <nav className="flex-1 space-y-1 px-3 py-4" aria-label={messages.nav.main}>
               {navItems.map((item) => (

@@ -1,7 +1,7 @@
 import { Schema, model, type InferSchemaType, type HydratedDocument } from "mongoose";
 
 export const USER_ROLES = ["client", "admin", "super_admin"] as const;
-export const ACCOUNT_STATUSES = ["pending", "approved", "rejected", "disabled"] as const;
+export const ACCOUNT_STATUSES = ["pending", "approved", "rejected", "disabled", "banned"] as const;
 
 const userSchema = new Schema(
   {
@@ -18,7 +18,7 @@ const userSchema = new Schema(
     // Set after an admin approves the account and the partner opens the email link.
     password: { type: String, select: false },
     phone: { type: String, required: true, trim: true, maxlength: 20 },
-    companyName: { type: String, required: true, trim: true, maxlength: 120, default: "" },
+    companyName: { type: String, trim: true, maxlength: 120, default: "" },
     role: { type: String, enum: USER_ROLES, default: "client", required: true },
     status: { type: String, enum: ACCOUNT_STATUSES, default: "pending", required: true },
     totalPoints: { type: Number, default: 0, min: 0, required: true },

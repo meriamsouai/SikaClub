@@ -1,5 +1,5 @@
 export type UserRole = "client" | "admin" | "super_admin";
-export type AccountStatus = "pending" | "approved" | "rejected" | "disabled";
+export type AccountStatus = "pending" | "approved" | "rejected" | "disabled" | "banned";
 
 export type PublicUser = {
   id: string;

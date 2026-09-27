@@ -143,6 +143,13 @@ router.post(
         "DISABLED",
       );
     }
+    if (user.status === "banned") {
+      throw new AppError(
+        403,
+        "Votre compte a été suspendu. Contactez SIKA pour plus d’informations.",
+        "BANNED",
+      );
+    }
 
     await issueSession(user._id.toString(), user.role, res);
     res.json({ user: toPublicUser(user) });

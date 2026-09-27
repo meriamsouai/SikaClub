@@ -221,8 +221,24 @@ export function getClients() {
   return request<{ users: PublicUser[] }>("/api/admin/clients");
 }
 
+export function banClient(id: string) {
+  return request<{ user: PublicUser; message: string }>(`/api/admin/clients/${id}/ban`, {
+    method: "POST",
+    body: "{}",
+  });
+}
+
+export function unbanClient(id: string) {
+  return request<{ user: PublicUser; message: string }>(`/api/admin/clients/${id}/unban`, {
+    method: "POST",
+    body: "{}",
+  });
+}
+
 export function getLeaderboard() {
-  return request<{ users: Array<PublicUser & { rank: number }> }>("/api/admin/leaderboard");
+  return request<{
+    users: Array<PublicUser & { rank: number; lifetimePoints: number; currentPoints: number }>;
+  }>("/api/admin/leaderboard");
 }
 
 export function getAdminGifts() {
@@ -331,13 +347,6 @@ export function rejectInvoice(id: string, note = "") {
   return request<{ invoice: PublicInvoice; message: string }>(`/api/invoices/admin/${id}/reject`, {
     method: "POST",
     body: JSON.stringify({ note }),
-  });
-}
-
-export function reportInvoiceProblem(id: string, message: string) {
-  return request<{ invoice: PublicInvoice; message: string }>(`/api/invoices/mine/${id}/report`, {
-    method: "POST",
-    body: JSON.stringify({ message }),
   });
 }
 

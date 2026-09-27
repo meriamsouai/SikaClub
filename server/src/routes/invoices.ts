@@ -3,6 +3,7 @@ import { asyncHandler } from "../lib/asyncHandler";
 import { recordAdminAction } from "../lib/audit";
 import { invoiceFilePublicPath, invoiceFileUpload, MAX_INVOICE_FILES } from "../lib/invoiceUpload";
 import { recordInvoicePoints } from "../lib/pointsLedger";
+import { nextInvoiceReference } from "../models/Counter";
 import { InvoiceModel, toPublicInvoice } from "../models/Invoice";
 import { allocateProductPoints, igolflexPointsForSeaux, ProductModel, toPublicProduct } from "../models/Product";
 import { UserModel } from "../models/User";
@@ -32,50 +33,6 @@ router.get(
   asyncHandler(async (req, res) => {
     const invoices = await InvoiceModel.find({ user: req.authUser!._id }).sort({ createdAt: -1 });
     res.json({ invoices: invoices.map((invoice) => toPublicInvoice(invoice)) });
-  }),
-);
-
-router.post(
-  "/mine/:id/report",
-  requireAuth,
-  asyncHandler(async (req, res) => {
-    if (req.authUser!.role !== "client") {
-      throw new AppError(403, "Seuls les partenaires peuvent signaler un problème.", "FORBIDDEN");
-    }
-
-    const message = typeof req.body?.message === "string" ? req.body.message.trim() : "";
-    if (!message) {
-      throw new AppError(400, "Veuillez décrire le problème.", "VALIDATION");
-    }
-    if (message.length > 1000) {
-      throw new AppError(400, "Le message est trop long (1000 caractères max).", "VALIDATION");
-    }
-
-    const invoice = await InvoiceModel.findOne({
-      _id: req.params.id,
-      user: req.authUser!._id,
-    });
-    if (!invoice) {
-      throw new AppError(404, "Facture introuvable.", "NOT_FOUND");
-    }
-    if (invoice.clientProblemReport?.trim()) {
-      throw new AppError(400, "Un problème a déjà été signalé pour cette facture.", "VALIDATION");
-    }
-    if (invoice.status !== "approved" && invoice.status !== "rejected") {
-      throw new AppError(
-        400,
-        "Vous pourrez signaler un problème après la décision de l’administrateur.",
-        "VALIDATION",
-      );
-    }
-
-    invoice.clientProblemReport = message;
-    await invoice.save();
-
-    res.json({
-      invoice: toPublicInvoice(invoice),
-      message: "Votre message a été enregistré.",
-    });
   }),
 );
 
@@ -130,6 +87,7 @@ router.post(
     const estimatedPoints = lines.reduce((sum, line) => sum + line.points, 0);
     const distributors = [...new Set(lines.map((line) => line.distributor))];
     const fileUrls = uploaded.map((file) => invoiceFilePublicPath(file.filename));
+    const reference = await nextInvoiceReference();
     const invoice = await InvoiceModel.create({
       user: req.authUser!._id,
       distributor: distributors.join(" · "),
@@ -139,6 +97,7 @@ router.post(
       status: "pending",
       estimatedPoints,
       pointsAwarded: 0,
+      reference,
     });
 
     res.status(201).json({

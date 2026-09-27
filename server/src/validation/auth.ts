@@ -10,12 +10,10 @@ const phoneSchema = z
 
 export const signupSchema = z.object({
   phone: phoneSchema,
-  companyName: z
-    .string()
-    .trim()
-    .max(120, "Le nom de l’entreprise est trop long.")
-    .optional()
-    .transform((value) => value ?? ""),
+  companyName: z.preprocess(
+    (value) => (value == null ? "" : String(value).trim()),
+    z.string().max(120, "Le nom de l’entreprise est trop long."),
+  ),
   firstName: z.string().trim().min(1, "Le prénom est requis.").max(80, "Le prénom est trop long."),
   surname: z.string().trim().min(1, "Le nom est requis.").max(80, "Le nom est trop long."),
   email: z

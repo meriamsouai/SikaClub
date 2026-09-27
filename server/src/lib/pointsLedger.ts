@@ -83,4 +83,27 @@ export async function recordRedemptionRefund(input: {
   });
 }
 
+export async function lifetimePointsForUser(userId: UserDocument["_id"]): Promise<number> {
+  const rows = await PointEntryModel.aggregate<{ total: number }>([
+    { $match: { user: userId, type: { $in: ["welcome", "invoice"] } } },
+    { $group: { _id: null, total: { $sum: "$points" } } },
+  ]);
+  return rows[0]?.total ?? 0;
+}
+
+export async function lifetimePointsByUserIds(
+  userIds: Array<UserDocument["_id"]>,
+): Promise<Map<string, number>> {
+  if (userIds.length === 0) return new Map();
+  const rows = await PointEntryModel.aggregate<{ _id: UserDocument["_id"]; total: number }>([
+    { $match: { user: { $in: userIds }, type: { $in: ["welcome", "invoice"] } } },
+    { $group: { _id: "$user", total: { $sum: "$points" } } },
+  ]);
+  const map = new Map<string, number>();
+  for (const row of rows) {
+    map.set(row._id.toString(), row.total);
+  }
+  return map;
+}
+
 export { WELCOME_POINTS, WELCOME_LABEL };
