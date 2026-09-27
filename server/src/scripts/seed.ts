@@ -162,8 +162,11 @@ async function seed() {
   if (env.isProduction && process.env.SEED_ALLOW !== "true") {
     throw new Error("Refusing to seed in production. Set SEED_ALLOW=true to override.");
   }
+  if (!env.seedAdminEmail.trim()) {
+    throw new Error("Set SEED_ADMIN_EMAIL in server/.env before seeding.");
+  }
   if (env.seedAdminPassword.length < 10) {
-    throw new Error("SEED_ADMIN_PASSWORD must be at least 10 characters.");
+    throw new Error("SEED_ADMIN_PASSWORD must be at least 10 characters (set it in server/.env).");
   }
 
   await connectDb();

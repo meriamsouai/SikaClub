@@ -11,7 +11,7 @@ Partner portal for registering SIKA invoices and tracking bonus points, plus an 
 ## Prerequisites
 
 - Node.js 20 or later
-- MongoDB running locally on `mongodb://127.0.0.1:27017`, or Docker
+- MongoDB (local, Docker, or MongoDB Atlas)
 - SMTP credentials (required to approve partner accounts)
 
 ## Setup
@@ -20,19 +20,22 @@ Partner portal for registering SIKA invoices and tracking bonus points, plus an 
 npm install
 ```
 
-Copy the environment file if `server/.env` is not already present:
+Copy the example env file and fill in your own values:
 
 ```bash
 cp server/.env.example server/.env
 ```
 
-Fill in JWT secrets and SMTP settings in `server/.env`:
+Required in `server/.env`:
 
+- `MONGODB_URI`
+- `JWT_ACCESS_SECRET` / `JWT_REFRESH_SECRET` (long random strings)
 - `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `SMTP_FROM`
+- `SEED_ADMIN_EMAIL` / `SEED_ADMIN_PASSWORD` (only for seeding; use a strong password)
 
-Do not commit `server/.env`.
+**Never commit `server/.env`.** It is gitignored on purpose.
 
-Start MongoDB, for example:
+Optional local MongoDB via Docker:
 
 ```bash
 docker compose up -d
@@ -49,17 +52,15 @@ npm run dev
 - App: http://localhost:5173
 - API: http://localhost:5000 (Vite proxies `/api` and `/uploads`)
 
-## Seed accounts
+## Seed admin account
+
+After configuring `SEED_ADMIN_EMAIL` and `SEED_ADMIN_PASSWORD` in `server/.env`:
 
 ```bash
 npm run seed
 ```
 
-Default admin credentials (from `server/.env`):
-
-| Role | Email | Password |
-|------|-------|----------|
-| Admin | `admin@example.com` | `DemoAdmin123!` |
+This creates (or updates) the admin user from those env values, plus default products/gifts.
 
 - Admin lands on `/admin` (pending accounts, clients, leaderboard, gifts)
 - Partners sign up themselves and wait for admin approval
@@ -72,7 +73,13 @@ Approving a pending signup generates a password and emails it via SMTP. If SMTP 
 - Access token is a short-lived JWT in an httpOnly cookie; refresh tokens are hashed in MongoDB.
 - Keep the app and API same-origin in development via the Vite proxy.
 
+## Deploy notes
+
+- Frontend (e.g. Vercel): set `VITE_API_URL` to the API base URL
+- Backend (e.g. Render): set the same secrets as `server/.env`, plus `CLIENT_ORIGIN` to the frontend URL and `NODE_ENV=production`
+- Do not put real passwords, JWT secrets, or SMTP credentials in this README or in source files
+
 ## Main areas
 
 - Partner: invoices, points, gifts catalog, profile
-- Admin: approve/reject accounts, list clients, leaderboard, manage gifts (including image upload and hide/restore)
+- Admin: approve/reject accounts, list clients, leaderboard, manage gifts and ads (including image upload and hide/restore)

@@ -20,4 +20,4 @@ Same React app with role-based shells. Admins land on `/admin` after login. Part
 - Gifts: `active: false` hides from partners
 - Uploads stored in `server/uploads/gifts`, served at `/uploads`
 - SMTP env: `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `SMTP_FROM`
-- Seed admin via `SEED_ADMIN_EMAIL` / `SEED_ADMIN_PASSWORD`
+- Seed admin via `SEED_ADMIN_EMAIL` / `SEED_ADMIN_PASSWORD` in local env (never commit real values)
