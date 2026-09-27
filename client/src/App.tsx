@@ -6,7 +6,6 @@ import { AddInvoicePage } from "./pages/AddInvoicePage";
 import { AdminAdsPage } from "./pages/AdminAdsPage";
 import { AdminClientsPage } from "./pages/AdminClientsPage";
 import { AdminGiftsPage } from "./pages/AdminGiftsPage";
-import { AdminLeaderboardPage } from "./pages/AdminLeaderboardPage";
 import { AdminInvoicesPage } from "./pages/AdminInvoicesPage";
 import { AdminPendingPage } from "./pages/AdminPendingPage";
 import { AdminRedemptionsPage } from "./pages/AdminRedemptionsPage";
@@ -45,7 +44,7 @@ export function App() {
           <Route path="/admin/factures" element={<AdminInvoicesPage />} />
           <Route path="/admin/echanges" element={<AdminRedemptionsPage />} />
           <Route path="/admin/clients" element={<AdminClientsPage />} />
-          <Route path="/admin/classement" element={<AdminLeaderboardPage />} />
+          <Route path="/admin/classement" element={<Navigate to="/admin/clients" replace />} />
           <Route path="/admin/cadeaux" element={<AdminGiftsPage />} />
           <Route path="/admin/publicites" element={<AdminAdsPage />} />
         </Route>

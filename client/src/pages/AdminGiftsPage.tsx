@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState, type FormEvent } from "react";
 import { Alert } from "../components/Alert";
+import { ImageUploadField } from "../components/ImageUploadField";
 import { TextField } from "../components/TextField";
 import { useLanguage } from "../context/LanguageContext";
 import {
@@ -20,6 +21,16 @@ const emptyForm = {
   pointsRequired: "",
 };
 
+const API_URL = import.meta.env.VITE_API_URL ?? "";
+
+function giftImageSrc(imageUrl: string) {
+  if (!imageUrl) return "";
+  if (imageUrl.startsWith("http://") || imageUrl.startsWith("https://") || imageUrl.startsWith("/images/")) {
+    return imageUrl;
+  }
+  return `${API_URL}${imageUrl}`;
+}
+
 export function AdminGiftsPage() {
   const { locale, messages } = useLanguage();
   const [gifts, setGifts] = useState<PublicGift[]>([]);
@@ -29,6 +40,7 @@ export function AdminGiftsPage() {
   const [form, setForm] = useState(emptyForm);
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [editingImageUrl, setEditingImageUrl] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
   const load = useCallback(async () => {
@@ -56,6 +68,7 @@ export function AdminGiftsPage() {
       pointsRequired: String(gift.pointsRequired),
     });
     setImageFile(null);
+    setEditingImageUrl(giftImageSrc(gift.imageUrl));
     setMessage(null);
     setError(null);
   }
@@ -64,6 +77,7 @@ export function AdminGiftsPage() {
     setEditingId(null);
     setForm(emptyForm);
     setImageFile(null);
+    setEditingImageUrl("");
   }
 
   async function handleSubmit(event: FormEvent) {
@@ -152,15 +166,17 @@ export function AdminGiftsPage() {
             required
           />
         </div>
-        <label className="block text-sm font-medium text-ink">
-          {messages.admin.giftImage}
-          <input
-            type="file"
-            accept="image/*"
-            className="mt-1.5 block w-full text-sm"
-            onChange={(event) => setImageFile(event.target.files?.[0] ?? null)}
+        <div className="max-w-sm">
+          <ImageUploadField
+            label={messages.admin.giftImage}
+            chooseLabel={messages.admin.imageChoose}
+            clearLabel={messages.admin.imageClear}
+            file={imageFile}
+            onFileChange={setImageFile}
+            existingUrl={editingImageUrl}
+            previewAspectClassName="aspect-[4/3]"
           />
-        </label>
+        </div>
         <div className="flex flex-wrap gap-3">
           <button
             type="submit"
@@ -189,7 +205,7 @@ export function AdminGiftsPage() {
             <article key={gift.id} className={`rounded-lg border bg-white p-4 ${gift.active ? "border-line" : "border-dashed border-muted opacity-80"}`}>
               <div className="mb-3 aspect-[4/3] overflow-hidden rounded-md bg-sika-yellow-soft p-3">
                 <img
-                  src={gift.imageUrl || "/images/gifts-temp.jpg"}
+                  src={giftImageSrc(gift.imageUrl) || "/images/gifts-temp.jpg"}
                   alt=""
                   className="h-full w-full object-contain"
                 />

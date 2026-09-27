@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState, type FormEvent } from "react";
 import { Alert } from "../components/Alert";
+import { ImageUploadField } from "../components/ImageUploadField";
 import { TextField } from "../components/TextField";
 import { useLanguage } from "../context/LanguageContext";
 import {
@@ -37,6 +38,8 @@ export function AdminAdsPage() {
   const [desktopFile, setDesktopFile] = useState<File | null>(null);
   const [mobileFile, setMobileFile] = useState<File | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [editingDesktopUrl, setEditingDesktopUrl] = useState("");
+  const [editingMobileUrl, setEditingMobileUrl] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
   const load = useCallback(async () => {
@@ -64,6 +67,8 @@ export function AdminAdsPage() {
     });
     setDesktopFile(null);
     setMobileFile(null);
+    setEditingDesktopUrl(adImageSrc(ad.imageUrlDesktop || ad.imageUrl));
+    setEditingMobileUrl(adImageSrc(ad.imageUrlMobile || ad.imageUrlDesktop || ad.imageUrl));
     setMessage(null);
     setError(null);
   }
@@ -73,6 +78,8 @@ export function AdminAdsPage() {
     setForm(emptyForm);
     setDesktopFile(null);
     setMobileFile(null);
+    setEditingDesktopUrl("");
+    setEditingMobileUrl("");
   }
 
   async function handleSubmit(event: FormEvent) {
@@ -153,28 +160,28 @@ export function AdminAdsPage() {
           onChange={(event) => setForm((current) => ({ ...current, linkUrl: event.target.value }))}
         />
         <div className="grid gap-4 sm:grid-cols-2">
-          <label className="block text-sm font-medium text-ink">
-            {copy.adImageDesktop}
-            <input
-              type="file"
-              accept="image/*"
-              className="mt-1.5 block w-full text-sm"
-              onChange={(event) => setDesktopFile(event.target.files?.[0] ?? null)}
-              required={!editingId}
-            />
-            <span className="mt-1 block text-xs text-muted">{copy.adImageDesktopHint}</span>
-          </label>
-          <label className="block text-sm font-medium text-ink">
-            {copy.adImageMobile}
-            <input
-              type="file"
-              accept="image/*"
-              className="mt-1.5 block w-full text-sm"
-              onChange={(event) => setMobileFile(event.target.files?.[0] ?? null)}
-              required={!editingId}
-            />
-            <span className="mt-1 block text-xs text-muted">{copy.adImageMobileHint}</span>
-          </label>
+          <ImageUploadField
+            label={copy.adImageDesktop}
+            hint={copy.adImageDesktopHint}
+            chooseLabel={copy.imageChoose}
+            clearLabel={copy.imageClear}
+            required={!editingId}
+            file={desktopFile}
+            onFileChange={setDesktopFile}
+            existingUrl={editingDesktopUrl}
+            previewAspectClassName="aspect-[4/5]"
+          />
+          <ImageUploadField
+            label={copy.adImageMobile}
+            hint={copy.adImageMobileHint}
+            chooseLabel={copy.imageChoose}
+            clearLabel={copy.imageClear}
+            required={!editingId}
+            file={mobileFile}
+            onFileChange={setMobileFile}
+            existingUrl={editingMobileUrl}
+            previewAspectClassName="aspect-[3/1]"
+          />
         </div>
         <div className="flex flex-wrap gap-3">
           <button

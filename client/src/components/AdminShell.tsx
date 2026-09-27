@@ -25,7 +25,6 @@ export function AdminShell() {
     { to: "/admin/factures", label: messages.admin.invoices },
     { to: "/admin/echanges", label: messages.admin.redemptions },
     { to: "/admin/clients", label: messages.admin.clients },
-    { to: "/admin/classement", label: messages.admin.leaderboard },
     { to: "/admin/cadeaux", label: messages.admin.gifts },
     { to: "/admin/publicites", label: messages.admin.ads },
   ];
