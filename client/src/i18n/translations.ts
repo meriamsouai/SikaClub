@@ -276,6 +276,11 @@ const fr = {
     pointsLeftNeeded: "Il vous manque {count} points pour obtenir ce cadeau",
     redeem: "Échanger",
     redeeming: "Échange…",
+    redeemConfirmTitle: "Confirmer l’échange",
+    redeemConfirmMessage:
+      "Après l’échange de « {gift} », il vous restera {points} points. Voulez-vous confirmer cet échange ?",
+    confirmRedeem: "Confirmer l’échange",
+    cancelRedeem: "Annuler",
     redeemSuccess: "Cadeau échangé. Référence : {ref}",
     redeemFailed: "Impossible d’échanger ce cadeau.",
     insufficientPoints: "Points insuffisants.",
@@ -739,6 +744,11 @@ const en: typeof fr = {
     pointsLeftNeeded: "You need {count} more points to get this gift",
     redeem: "Redeem",
     redeeming: "Redeeming…",
+    redeemConfirmTitle: "Confirm redemption",
+    redeemConfirmMessage:
+      "After redeeming “{gift}”, you will have {points} points left. Do you want to confirm this exchange?",
+    confirmRedeem: "Confirm exchange",
+    cancelRedeem: "Cancel",
     redeemSuccess: "Gift redeemed. Reference: {ref}",
     redeemFailed: "Unable to redeem this gift.",
     insufficientPoints: "Not enough points.",

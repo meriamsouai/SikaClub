@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Alert } from "../components/Alert";
+import { ConfirmDialog } from "../components/ConfirmDialog";
 import { useAuth } from "../context/AuthContext";
 import { useLanguage } from "../context/LanguageContext";
 import { ApiError, getActiveGifts, redeemGift } from "../lib/api";
@@ -15,6 +16,7 @@ export function GiftsPage() {
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
+  const [pendingGift, setPendingGift] = useState<PublicGift | null>(null);
   const points = user?.totalPoints ?? 0;
   const copy = messages.gifts;
 
@@ -41,13 +43,20 @@ export function GiftsPage() {
     return [...gifts].sort((a, b) => a.pointsRequired - b.pointsRequired || a.valueTnd - b.valueTnd);
   }, [gifts]);
 
-  async function handleRedeem(giftId: string) {
+  const remainingAfterRedeem = pendingGift
+    ? Math.max(points - pendingGift.pointsRequired, 0)
+    : 0;
+
+  async function confirmRedeem() {
+    if (!pendingGift) return;
+    const giftId = pendingGift.id;
     setBusyId(giftId);
     setError(null);
     setMessage(null);
     try {
       const result = await redeemGift(giftId);
       setMessage(copy.redeemSuccess.replace("{ref}", result.redemption.reference));
+      setPendingGift(null);
       await load();
     } catch (err) {
       setError(err instanceof ApiError ? translateError(err.code, err.message, messages) : copy.redeemFailed);
@@ -117,7 +126,7 @@ export function GiftsPage() {
                 <button
                   type="button"
                   disabled={!affordable || busyId === gift.id}
-                  onClick={() => void handleRedeem(gift.id)}
+                  onClick={() => setPendingGift(gift)}
                   className="inline-flex h-10 w-full items-center justify-center rounded-md bg-sika-red px-3 text-sm font-semibold text-white hover:bg-sika-red-dark disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   {busyId === gift.id ? copy.redeeming : copy.redeem}
@@ -127,6 +136,25 @@ export function GiftsPage() {
           );
         })}
       </div>
+
+      <ConfirmDialog
+        open={Boolean(pendingGift)}
+        title={copy.redeemConfirmTitle}
+        message={
+          pendingGift
+            ? copy.redeemConfirmMessage
+                .replace("{gift}", pendingGift.name)
+                .replace("{points}", formatPoints(remainingAfterRedeem, locale))
+            : ""
+        }
+        confirmLabel={copy.confirmRedeem}
+        cancelLabel={copy.cancelRedeem}
+        busy={Boolean(busyId)}
+        onCancel={() => {
+          if (!busyId) setPendingGift(null);
+        }}
+        onConfirm={() => void confirmRedeem()}
+      />
     </div>
   );
 }
