@@ -2,6 +2,21 @@ import type { PublicAd, PublicGift, PublicGiftRedemption, PublicInvoice, PublicP
 
 const API_URL = import.meta.env.VITE_API_URL ?? "";
 
+/** Prefix relative `/uploads/...` paths with the API host (needed on Vercel). */
+export function resolveMediaUrl(url: string): string {
+  if (!url) return "";
+  if (
+    url.startsWith("http://") ||
+    url.startsWith("https://") ||
+    url.startsWith("blob:") ||
+    url.startsWith("data:") ||
+    url.startsWith("/images/")
+  ) {
+    return url;
+  }
+  return `${API_URL}${url}`;
+}
+
 export class ApiError extends Error {
   code?: string;
   fieldErrors?: Record<string, string[]>;

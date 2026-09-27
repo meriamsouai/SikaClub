@@ -1,9 +1,12 @@
 import { useCallback, useEffect, useState } from "react";
 import { Alert } from "../components/Alert";
+import { ConfirmDialog } from "../components/ConfirmDialog";
 import { useLanguage } from "../context/LanguageContext";
 import { approveAccount, getPendingAccounts, rejectAccount, ApiError } from "../lib/api";
 import { translateError } from "../i18n/translations";
 import type { PublicUser } from "../types";
+
+type PendingAction = { type: "approve" | "reject"; user: PublicUser };
 
 export function AdminPendingPage() {
   const { messages } = useLanguage();
@@ -11,7 +14,8 @@ export function AdminPendingPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
-  const [busyId, setBusyId] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [pendingAction, setPendingAction] = useState<PendingAction | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -30,37 +34,25 @@ export function AdminPendingPage() {
     void load();
   }, [load]);
 
-  async function approve(id: string) {
-    if (!window.confirm(messages.admin.approveAccountConfirm)) return;
-
-    setBusyId(id);
-    setError(null);
-    setMessage(null);
-    try {
-      const result = await approveAccount(id);
-      setMessage(result.message);
-      setUsers((current) => current.filter((user) => user.id !== id));
-    } catch (err) {
-      setError(err instanceof ApiError ? translateError(err.code, err.message, messages) : messages.admin.actionFailed);
-    } finally {
-      setBusyId(null);
-    }
+  function closeDialog() {
+    if (!busy) setPendingAction(null);
   }
 
-  async function reject(id: string) {
-    if (!window.confirm(messages.admin.rejectAccountConfirm)) return;
-
-    setBusyId(id);
+  async function runPendingAction() {
+    if (!pendingAction) return;
+    const { user, type } = pendingAction;
+    setBusy(true);
     setError(null);
     setMessage(null);
     try {
-      const result = await rejectAccount(id);
+      const result = type === "approve" ? await approveAccount(user.id) : await rejectAccount(user.id);
       setMessage(result.message);
-      setUsers((current) => current.filter((user) => user.id !== id));
+      setUsers((current) => current.filter((item) => item.id !== user.id));
+      setPendingAction(null);
     } catch (err) {
       setError(err instanceof ApiError ? translateError(err.code, err.message, messages) : messages.admin.actionFailed);
     } finally {
-      setBusyId(null);
+      setBusy(false);
     }
   }
 
@@ -101,16 +93,16 @@ export function AdminPendingPage() {
                     <div className="flex flex-wrap gap-2">
                       <button
                         type="button"
-                        disabled={busyId === user.id}
-                        onClick={() => void approve(user.id)}
+                        disabled={busy}
+                        onClick={() => setPendingAction({ type: "approve", user })}
                         className="rounded-md bg-sika-red px-3 py-1.5 text-xs font-semibold text-white hover:bg-sika-red-dark disabled:opacity-60"
                       >
                         {messages.admin.approve}
                       </button>
                       <button
                         type="button"
-                        disabled={busyId === user.id}
-                        onClick={() => void reject(user.id)}
+                        disabled={busy}
+                        onClick={() => setPendingAction({ type: "reject", user })}
                         className="rounded-md border border-line px-3 py-1.5 text-xs font-semibold text-ink hover:bg-canvas disabled:opacity-60"
                       >
                         {messages.admin.reject}
@@ -123,6 +115,28 @@ export function AdminPendingPage() {
           </table>
         </div>
       )}
+
+      <ConfirmDialog
+        open={pendingAction?.type === "approve"}
+        title={messages.admin.confirmTitle}
+        message={messages.admin.approveAccountConfirm}
+        confirmLabel={messages.admin.approve}
+        cancelLabel={messages.admin.cancel}
+        busy={busy}
+        onCancel={closeDialog}
+        onConfirm={() => void runPendingAction()}
+      />
+      <ConfirmDialog
+        open={pendingAction?.type === "reject"}
+        title={messages.admin.confirmTitle}
+        message={messages.admin.rejectAccountConfirm}
+        confirmLabel={messages.admin.reject}
+        cancelLabel={messages.admin.cancel}
+        busy={busy}
+        tone="danger"
+        onCancel={closeDialog}
+        onConfirm={() => void runPendingAction()}
+      />
     </div>
   );
 }

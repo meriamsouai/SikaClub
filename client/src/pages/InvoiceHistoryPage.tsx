@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { Alert } from "../components/Alert";
 import { useLanguage } from "../context/LanguageContext";
-import { ApiError, getMyInvoices } from "../lib/api";
+import { ApiError, getMyInvoices, resolveMediaUrl } from "../lib/api";
 import { formatPoints } from "../lib/format";
 import { translateError } from "../i18n/translations";
 import type { PublicInvoice } from "../types";
@@ -99,7 +99,7 @@ export function InvoiceHistoryPage() {
                       {(invoice.fileUrls?.length ? invoice.fileUrls : [invoice.fileUrl]).map((url, index, list) => (
                         <a
                           key={url}
-                          href={url}
+                          href={resolveMediaUrl(url)}
                           target="_blank"
                           rel="noopener noreferrer"
                           className="font-semibold text-sika-red-dark hover:underline"

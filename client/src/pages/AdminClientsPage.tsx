@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState, Fragment, type ReactNode } from "react";
 import { AdminPageTabs } from "../components/AdminPageTabs";
 import { Alert } from "../components/Alert";
+import { ConfirmDialog } from "../components/ConfirmDialog";
 import { useLanguage } from "../context/LanguageContext";
 import {
   ApiError,
@@ -67,6 +68,8 @@ export function AdminClientsPage() {
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [entries, setEntries] = useState<PublicPointEntry[]>([]);
   const [entriesLoading, setEntriesLoading] = useState(false);
+  const [banTarget, setBanTarget] = useState<PublicUser | null>(null);
+  const [banBusy, setBanBusy] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -121,24 +124,26 @@ export function AdminClientsPage() {
     }
   }
 
-  async function toggleBan(user: PublicUser) {
-    const isBanned = user.status === "banned";
-    const confirmed = window.confirm(isBanned ? copy.unbanConfirm : copy.banConfirm);
-    if (!confirmed) return;
-
+  async function confirmBanToggle() {
+    if (!banTarget) return;
+    const isBanned = banTarget.status === "banned";
+    setBanBusy(true);
     setError(null);
     setMessage(null);
     try {
       if (isBanned) {
-        const result = await unbanClient(user.id);
+        const result = await unbanClient(banTarget.id);
         setMessage(result.message || copy.clientUnbanned);
-      } else if (user.status === "approved") {
-        const result = await banClient(user.id);
+      } else if (banTarget.status === "approved") {
+        const result = await banClient(banTarget.id);
         setMessage(result.message || copy.clientBanned);
       }
+      setBanTarget(null);
       await load();
     } catch (err) {
       setError(err instanceof ApiError ? translateError(err.code, err.message, messages) : copy.actionFailed);
+    } finally {
+      setBanBusy(false);
     }
   }
 
@@ -168,7 +173,7 @@ export function AdminClientsPage() {
               {user.status === "approved" || user.status === "banned" ? (
                 <button
                   type="button"
-                  onClick={() => void toggleBan(user)}
+                  onClick={() => setBanTarget(user)}
                   title={user.status === "banned" ? copy.unbanClient : copy.banClient}
                   aria-label={user.status === "banned" ? copy.unbanClient : copy.banClient}
                   className={`inline-flex h-9 w-9 items-center justify-center rounded-md border transition-colors ${
@@ -240,6 +245,7 @@ export function AdminClientsPage() {
   }
 
   const hasResults = activeUsers.length > 0 || bannedUsers.length > 0;
+  const banIsUnban = banTarget?.status === "banned";
 
   return (
     <div className="space-y-6">
@@ -382,6 +388,20 @@ export function AdminClientsPage() {
           )}
         </div>
       )}
+
+      <ConfirmDialog
+        open={Boolean(banTarget)}
+        title={messages.admin.confirmTitle}
+        message={banIsUnban ? copy.unbanConfirm : copy.banConfirm}
+        confirmLabel={banIsUnban ? copy.unbanClient : copy.banClient}
+        cancelLabel={copy.cancel}
+        busy={banBusy}
+        tone={banIsUnban ? "primary" : "danger"}
+        onCancel={() => {
+          if (!banBusy) setBanTarget(null);
+        }}
+        onConfirm={() => void confirmBanToggle()}
+      />
     </div>
   );
 }

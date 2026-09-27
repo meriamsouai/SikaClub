@@ -4,7 +4,7 @@ import { Alert } from "../components/Alert";
 import { PointsBalanceChart } from "../components/PointsBalanceChart";
 import { useAuth } from "../context/AuthContext";
 import { useLanguage } from "../context/LanguageContext";
-import { ApiError, getMyInvoices, getMyPoints, getMyRedemptions } from "../lib/api";
+import { ApiError, getMyInvoices, getMyPoints, getMyRedemptions, resolveMediaUrl } from "../lib/api";
 import { formatPoints } from "../lib/format";
 import { translateError } from "../i18n/translations";
 import type { InvoiceStatus, PublicGiftRedemption, PublicInvoice, PublicPointEntry } from "../types";
@@ -211,7 +211,7 @@ export function HistoryPage() {
                               {files.map((url) => (
                                 <a
                                   key={url}
-                                  href={url}
+                                  href={resolveMediaUrl(url)}
                                   target="_blank"
                                   rel="noopener noreferrer"
                                   className="font-semibold text-sika-red-dark hover:underline"
