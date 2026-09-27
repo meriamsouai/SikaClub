@@ -31,6 +31,8 @@ export function AdminPendingPage() {
   }, [load]);
 
   async function approve(id: string) {
+    if (!window.confirm(messages.admin.approveAccountConfirm)) return;
+
     setBusyId(id);
     setError(null);
     setMessage(null);
@@ -46,6 +48,8 @@ export function AdminPendingPage() {
   }
 
   async function reject(id: string) {
+    if (!window.confirm(messages.admin.rejectAccountConfirm)) return;
+
     setBusyId(id);
     setError(null);
     setMessage(null);

@@ -30,6 +30,7 @@ export function AdminInvoicesPage() {
   const [message, setMessage] = useState<string | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [notes, setNotes] = useState<Record<string, string>>({});
+  const [rejectingId, setRejectingId] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -53,11 +54,14 @@ export function AdminInvoicesPage() {
   }, [load]);
 
   async function approve(id: string) {
+    if (!window.confirm(messages.admin.approveInvoiceConfirm)) return;
+
     setBusyId(id);
     setError(null);
     setMessage(null);
+    setRejectingId(null);
     try {
-      const result = await approveInvoice(id, notes[id] ?? "");
+      const result = await approveInvoice(id);
       setMessage(result.message);
       setPending((current) => current.filter((invoice) => invoice.id !== id));
       setReviewed((current) => [result.invoice, ...current.filter((invoice) => invoice.id !== id)]);
@@ -74,6 +78,8 @@ export function AdminInvoicesPage() {
   }
 
   async function reject(id: string) {
+    if (!window.confirm(messages.admin.rejectInvoiceConfirm)) return;
+
     setBusyId(id);
     setError(null);
     setMessage(null);
@@ -82,6 +88,7 @@ export function AdminInvoicesPage() {
       setMessage(result.message);
       setPending((current) => current.filter((invoice) => invoice.id !== id));
       setReviewed((current) => [result.invoice, ...current.filter((invoice) => invoice.id !== id)]);
+      setRejectingId(null);
       setNotes((current) => {
         const next = { ...current };
         delete next[id];
@@ -179,18 +186,20 @@ export function AdminInvoicesPage() {
                     {invoice.clientProblemReport}
                   </p>
                 ) : null}
-                <label className="mt-4 block text-sm font-medium text-ink">
-                  {messages.invoices.adminNote}
-                  <textarea
-                    value={notes[invoice.id] ?? ""}
-                    onChange={(event) =>
-                      setNotes((current) => ({ ...current, [invoice.id]: event.target.value }))
-                    }
-                    placeholder={messages.invoices.adminNotePlaceholder}
-                    rows={2}
-                    className="mt-1.5 w-full rounded-md border border-line bg-white px-3 py-2 text-sm outline-none focus:border-sika-red focus:ring-2 focus:ring-sika-red/20"
-                  />
-                </label>
+                {rejectingId === invoice.id ? (
+                  <label className="mt-4 block text-sm font-medium text-ink">
+                    {messages.invoices.rejectReason}
+                    <textarea
+                      value={notes[invoice.id] ?? ""}
+                      onChange={(event) =>
+                        setNotes((current) => ({ ...current, [invoice.id]: event.target.value }))
+                      }
+                      placeholder={messages.invoices.adminNotePlaceholder}
+                      rows={2}
+                      className="mt-1.5 w-full rounded-md border border-line bg-white px-3 py-2 text-sm outline-none focus:border-sika-red focus:ring-2 focus:ring-sika-red/20"
+                    />
+                  </label>
+                ) : null}
                 <div className="mt-4 flex flex-wrap gap-3">
                   {(invoice.fileUrls?.length ? invoice.fileUrls : [invoice.fileUrl]).map(
                     (url, index, list) => (
@@ -207,22 +216,52 @@ export function AdminInvoicesPage() {
                       </a>
                     ),
                   )}
-                  <button
-                    type="button"
-                    disabled={busyId === invoice.id}
-                    onClick={() => void approve(invoice.id)}
-                    className="inline-flex h-9 items-center rounded-md bg-sika-red px-3 text-sm font-semibold text-white hover:bg-sika-red-dark disabled:opacity-60"
-                  >
-                    {messages.admin.approve}
-                  </button>
-                  <button
-                    type="button"
-                    disabled={busyId === invoice.id}
-                    onClick={() => void reject(invoice.id)}
-                    className="inline-flex h-9 items-center rounded-md border border-line px-3 text-sm font-semibold hover:bg-canvas disabled:opacity-60"
-                  >
-                    {messages.admin.reject}
-                  </button>
+                  {rejectingId === invoice.id ? (
+                    <>
+                      <button
+                        type="button"
+                        disabled={busyId === invoice.id}
+                        onClick={() => void reject(invoice.id)}
+                        className="inline-flex h-9 items-center rounded-md bg-sika-red px-3 text-sm font-semibold text-white hover:bg-sika-red-dark disabled:opacity-60"
+                      >
+                        {messages.invoices.confirmReject}
+                      </button>
+                      <button
+                        type="button"
+                        disabled={busyId === invoice.id}
+                        onClick={() => {
+                          setRejectingId(null);
+                          setNotes((current) => {
+                            const next = { ...current };
+                            delete next[invoice.id];
+                            return next;
+                          });
+                        }}
+                        className="inline-flex h-9 items-center rounded-md border border-line px-3 text-sm font-semibold hover:bg-canvas disabled:opacity-60"
+                      >
+                        {messages.invoices.cancelReject}
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      <button
+                        type="button"
+                        disabled={busyId === invoice.id}
+                        onClick={() => void approve(invoice.id)}
+                        className="inline-flex h-9 items-center rounded-md bg-sika-red px-3 text-sm font-semibold text-white hover:bg-sika-red-dark disabled:opacity-60"
+                      >
+                        {messages.admin.approve}
+                      </button>
+                      <button
+                        type="button"
+                        disabled={busyId === invoice.id}
+                        onClick={() => setRejectingId(invoice.id)}
+                        className="inline-flex h-9 items-center rounded-md border border-line px-3 text-sm font-semibold hover:bg-canvas disabled:opacity-60"
+                      >
+                        {messages.admin.reject}
+                      </button>
+                    </>
+                  )}
                 </div>
               </article>
             ))}
