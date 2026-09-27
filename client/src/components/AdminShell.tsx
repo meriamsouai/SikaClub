@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { useLanguage } from "../context/LanguageContext";
+import { isSuperAdmin } from "../lib/roles";
 import { AuthFooter } from "./AuthFooter";
 import { LanguageSwitcher } from "./LanguageSwitcher";
 
@@ -27,6 +28,12 @@ export function AdminShell() {
     { to: "/admin/clients", label: messages.admin.clients },
     { to: "/admin/cadeaux", label: messages.admin.gifts },
     { to: "/admin/publicites", label: messages.admin.ads },
+    ...(isSuperAdmin(user?.role)
+      ? [
+          { to: "/admin/equipe", label: messages.admin.staff },
+          { to: "/admin/journal", label: messages.admin.auditLog },
+        ]
+      : []),
   ];
 
   useEffect(() => {

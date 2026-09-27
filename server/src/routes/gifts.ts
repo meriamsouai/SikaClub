@@ -1,5 +1,6 @@
 import { Router } from "express";
 import { asyncHandler } from "../lib/asyncHandler";
+import { recordAdminAction } from "../lib/audit";
 import { sendGiftRedeemedEmail } from "../lib/mail";
 import { recordRedemptionDebit, recordRedemptionRefund } from "../lib/pointsLedger";
 import { nextSequentialReference } from "../models/Counter";
@@ -17,6 +18,10 @@ import { AppError } from "../middleware/errorHandler";
 
 const router = Router();
 
+function actorFrom(req: { authUser?: { _id: { toString(): string }; email: string; role: string } }) {
+  const user = req.authUser!;
+  return { id: user._id.toString(), email: user.email, role: user.role };
+}
 router.get(
   "/",
   requireAuth,
@@ -163,6 +168,13 @@ router.patch(
         points: redemption.pointsSpent,
         label: `Remboursement ${redemption.reference} — ${redemption.giftName}`,
       });
+      await recordAdminAction({
+        actor: actorFrom(req),
+        action: "redemption.cancel",
+        targetType: "redemption",
+        targetId: redemption._id.toString(),
+        summary: `Échange annulé : ${redemption.reference}`,
+      });
       res.json({
         redemption: toPublicGiftRedemption(redemption, user),
         message: "Échange annulé. Les points ont été remboursés.",
@@ -177,6 +189,13 @@ router.patch(
       redemption.status = "claimed";
       await redemption.save();
       const user = await UserModel.findById(redemption.user);
+      await recordAdminAction({
+        actor: actorFrom(req),
+        action: "redemption.claim",
+        targetType: "redemption",
+        targetId: redemption._id.toString(),
+        summary: `Cadeau remis : ${redemption.reference}`,
+      });
       res.json({
         redemption: toPublicGiftRedemption(redemption, user),
         message: "Cadeau marqué comme remis.",

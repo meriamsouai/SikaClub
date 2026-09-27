@@ -39,3 +39,17 @@ export const adBodySchema = z.object({
 });
 
 export type AdBodyInput = z.infer<typeof adBodySchema>;
+
+export const staffCreateSchema = z.object({
+  firstName: z.string().trim().min(1, "Le prénom est requis.").max(80),
+  surname: z.string().trim().min(1, "Le nom est requis.").max(80),
+  email: z.string().trim().email("Adresse e-mail invalide.").max(160),
+  phone: z
+    .string()
+    .trim()
+    .max(20)
+    .optional()
+    .transform((value) => (value && value.length > 0 ? value : "N/A")),
+});
+
+export type StaffCreateInput = z.infer<typeof staffCreateSchema>;

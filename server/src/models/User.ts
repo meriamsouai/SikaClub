@@ -1,7 +1,7 @@
 import { Schema, model, type InferSchemaType, type HydratedDocument } from "mongoose";
 
-export const USER_ROLES = ["client", "admin"] as const;
-export const ACCOUNT_STATUSES = ["pending", "approved", "rejected"] as const;
+export const USER_ROLES = ["client", "admin", "super_admin"] as const;
+export const ACCOUNT_STATUSES = ["pending", "approved", "rejected", "disabled"] as const;
 
 const userSchema = new Schema(
   {
@@ -30,6 +30,10 @@ export type UserRole = (typeof USER_ROLES)[number];
 export type AccountStatus = (typeof ACCOUNT_STATUSES)[number];
 export type User = InferSchemaType<typeof userSchema>;
 export type UserDocument = HydratedDocument<User>;
+
+export function isStaffRole(role: UserRole | string | undefined): boolean {
+  return role === "admin" || role === "super_admin";
+}
 
 export type PublicUser = {
   id: string;

@@ -4,11 +4,13 @@ import { AppShell } from "./components/AppShell";
 import { AdminRoute, GuestRoute, ProtectedRoute } from "./components/RouteGuards";
 import { AddInvoicePage } from "./pages/AddInvoicePage";
 import { AdminAdsPage } from "./pages/AdminAdsPage";
+import { AdminAuditLogPage } from "./pages/AdminAuditLogPage";
 import { AdminClientsPage } from "./pages/AdminClientsPage";
 import { AdminGiftsPage } from "./pages/AdminGiftsPage";
 import { AdminInvoicesPage } from "./pages/AdminInvoicesPage";
 import { AdminPendingPage } from "./pages/AdminPendingPage";
 import { AdminRedemptionsPage } from "./pages/AdminRedemptionsPage";
+import { AdminStaffPage } from "./pages/AdminStaffPage";
 import { DashboardPage } from "./pages/DashboardPage";
 import { GiftsPage } from "./pages/GiftsPage";
 import { HistoryPage } from "./pages/HistoryPage";
@@ -47,6 +49,8 @@ export function App() {
           <Route path="/admin/classement" element={<Navigate to="/admin/clients" replace />} />
           <Route path="/admin/cadeaux" element={<AdminGiftsPage />} />
           <Route path="/admin/publicites" element={<AdminAdsPage />} />
+          <Route path="/admin/equipe" element={<AdminStaffPage />} />
+          <Route path="/admin/journal" element={<AdminAuditLogPage />} />
         </Route>
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />

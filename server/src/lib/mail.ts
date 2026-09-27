@@ -115,3 +115,45 @@ export async function sendGiftRedeemedEmail(input: {
     `,
   });
 }
+
+export async function sendAdminInviteEmail(input: {
+  to: string;
+  firstName: string;
+  password: string;
+}) {
+  const transport = createTransport();
+  const loginUrl = `${env.clientOrigin}/login`;
+  const from =
+    env.smtpFrom && env.smtpFrom.includes("@")
+      ? env.smtpFrom.replace(/^["']|["']$/g, "")
+      : env.smtpUser;
+
+  await transport.sendMail({
+    from,
+    to: input.to,
+    subject: "Accès administrateur — Club Etancheurs SIKA",
+    text: [
+      `Bonjour ${input.firstName},`,
+      "",
+      "Un compte administrateur a été créé pour vous sur le portail Club Etancheurs SIKA.",
+      "",
+      `E-mail de connexion : ${input.to}`,
+      `Mot de passe temporaire : ${input.password}`,
+      "",
+      `Connectez-vous ici : ${loginUrl}`,
+      "",
+      "Nous vous recommandons de changer votre mot de passe après la première connexion.",
+      "",
+      "SIKA Tunisie",
+    ].join("\n"),
+    html: `
+      <p>Bonjour ${input.firstName},</p>
+      <p>Un compte administrateur a été créé pour vous sur le portail Club Etancheurs SIKA.</p>
+      <p><strong>E-mail de connexion :</strong> ${input.to}<br/>
+      <strong>Mot de passe temporaire :</strong> ${input.password}</p>
+      <p><a href="${loginUrl}">Se connecter</a></p>
+      <p>Nous vous recommandons de changer votre mot de passe après la première connexion.</p>
+      <p>SIKA Tunisie</p>
+    `,
+  });
+}

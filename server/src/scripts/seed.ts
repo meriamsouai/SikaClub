@@ -184,7 +184,7 @@ async function seed() {
       password: adminPassword,
       phone: "+216 70 022 700",
       companyName: "Sika Tunisie",
-      role: "admin",
+      role: "super_admin",
       status: "approved",
       totalPoints: 0,
     },

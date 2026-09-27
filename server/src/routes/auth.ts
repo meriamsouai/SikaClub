@@ -8,7 +8,7 @@ import { ensureWelcomeBonus } from "../lib/pointsLedger";
 import { createRefreshToken, hashToken, REFRESH_COOKIE, signAccessToken } from "../lib/tokens";
 import { PasswordResetModel } from "../models/PasswordReset";
 import { RefreshTokenModel } from "../models/RefreshToken";
-import { toPublicUser, UserModel } from "../models/User";
+import { toPublicUser, UserModel, type UserRole } from "../models/User";
 import { requireAuth } from "../middleware/auth";
 import { AppError } from "../middleware/errorHandler";
 import { validateBody } from "../middleware/validate";
@@ -41,7 +41,7 @@ const authLimiter = rateLimit({
   },
 });
 
-async function issueSession(userId: string, role: "client" | "admin", res: Parameters<typeof setAuthCookies>[0]) {
+async function issueSession(userId: string, role: UserRole, res: Parameters<typeof setAuthCookies>[0]) {
   const accessToken = signAccessToken(userId, role);
   const refresh = createRefreshToken();
   await RefreshTokenModel.create({
@@ -134,6 +134,13 @@ router.post(
         403,
         "Votre demande d’inscription n’a pas été approuvée. Contactez SIKA pour plus d’informations.",
         "REJECTED",
+      );
+    }
+    if (user.status === "disabled") {
+      throw new AppError(
+        403,
+        "Ce compte administrateur a été désactivé. Contactez le super administrateur.",
+        "DISABLED",
       );
     }
 

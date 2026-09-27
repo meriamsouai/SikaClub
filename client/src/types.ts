@@ -1,5 +1,5 @@
-export type UserRole = "client" | "admin";
-export type AccountStatus = "pending" | "approved" | "rejected";
+export type UserRole = "client" | "admin" | "super_admin";
+export type AccountStatus = "pending" | "approved" | "rejected" | "disabled";
 
 export type PublicUser = {
   id: string;
@@ -119,4 +119,17 @@ export type PublicGiftRedemption = {
   status: RedemptionStatus;
   createdAt: string;
   updatedAt: string;
+};
+
+export type PublicAdminAuditLog = {
+  id: string;
+  actorId: string;
+  actorEmail: string;
+  actorRole: string;
+  action: string;
+  targetType: string;
+  targetId: string;
+  summary: string;
+  metadata: Record<string, unknown>;
+  createdAt: string;
 };

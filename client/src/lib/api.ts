@@ -1,4 +1,4 @@
-import type { PublicAd, PublicGift, PublicGiftRedemption, PublicInvoice, PublicPointEntry, PublicProduct, PublicUser, SignupInput, RedemptionStatus } from "../types";
+import type { PublicAd, PublicGift, PublicGiftRedemption, PublicInvoice, PublicPointEntry, PublicProduct, PublicUser, SignupInput, RedemptionStatus, PublicAdminAuditLog } from "../types";
 
 const API_URL = import.meta.env.VITE_API_URL ?? "";
 
@@ -343,4 +343,33 @@ export function reportInvoiceProblem(id: string, message: string) {
 
 export function getAdminUserPoints(userId: string) {
   return request<{ entries: PublicPointEntry[] }>(`/api/points/admin/user/${userId}`);
+}
+
+export function getStaff() {
+  return request<{ users: PublicUser[] }>("/api/admin/staff");
+}
+
+export function createStaff(body: { firstName: string; surname: string; email: string; phone?: string }) {
+  return request<{ user: PublicUser; message: string }>("/api/admin/staff", {
+    method: "POST",
+    body: JSON.stringify(body),
+  });
+}
+
+export function disableStaff(id: string) {
+  return request<{ user: PublicUser; message: string }>(`/api/admin/staff/${id}/disable`, {
+    method: "POST",
+    body: "{}",
+  });
+}
+
+export function enableStaff(id: string) {
+  return request<{ user: PublicUser; message: string }>(`/api/admin/staff/${id}/enable`, {
+    method: "POST",
+    body: "{}",
+  });
+}
+
+export function getAuditLogs(limit = 100) {
+  return request<{ entries: PublicAdminAuditLog[] }>(`/api/admin/audit-logs?limit=${limit}`);
 }

@@ -1,5 +1,6 @@
 import { Router } from "express";
 import { asyncHandler } from "../lib/asyncHandler";
+import { recordAdminAction } from "../lib/audit";
 import { invoiceFilePublicPath, invoiceFileUpload, MAX_INVOICE_FILES } from "../lib/invoiceUpload";
 import { recordInvoicePoints } from "../lib/pointsLedger";
 import { InvoiceModel, toPublicInvoice } from "../models/Invoice";
@@ -12,6 +13,10 @@ import { createInvoiceSchema } from "../validation/invoice";
 
 const router = Router();
 
+function actorFrom(req: { authUser?: { _id: { toString(): string }; email: string; role: string } }) {
+  const user = req.authUser!;
+  return { id: user._id.toString(), email: user.email, role: user.role };
+}
 router.get(
   "/products",
   requireAuth,
@@ -214,6 +219,14 @@ router.post(
       label: productNames || "Facture approuvée",
     });
 
+    await recordAdminAction({
+      actor: actorFrom(req),
+      action: "invoice.approve",
+      targetType: "invoice",
+      targetId: invoice._id.toString(),
+      summary: `Facture approuvée (${invoice.pointsAwarded} pts) — ${user.email}`,
+    });
+
     res.json({
       invoice: toPublicInvoice(invoice, user),
       message: "Facture approuvée. Les points ont été crédités.",
@@ -241,6 +254,15 @@ router.post(
     await invoice.save();
 
     const user = await UserModel.findById(invoice.user);
+
+    await recordAdminAction({
+      actor: actorFrom(req),
+      action: "invoice.reject",
+      targetType: "invoice",
+      targetId: invoice._id.toString(),
+      summary: `Facture refusée — ${user?.email ?? invoice.user.toString()}`,
+    });
+
     res.json({
       invoice: toPublicInvoice(invoice, user),
       message: "Facture refusée.",

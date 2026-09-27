@@ -5,6 +5,7 @@ import { useAuth } from "../context/AuthContext";
 import { useLanguage } from "../context/LanguageContext";
 import { translateError } from "../i18n/translations";
 import { ApiError, changePassword } from "../lib/api";
+import { isStaffRole } from "../lib/roles";
 
 export function DashboardPage() {
   const { user } = useAuth();
@@ -71,7 +72,7 @@ export function DashboardPage() {
 
   return (
     <div className="space-y-8">
-      {user.role === "admin" ? (
+      {isStaffRole(user.role) ? (
         <p className="rounded-md border border-sika-yellow bg-sika-yellow-soft px-4 py-3 text-sm">
           {messages.dashboard.adminNote}
         </p>

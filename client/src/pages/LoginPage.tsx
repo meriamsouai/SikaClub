@@ -8,6 +8,7 @@ import { useAuth } from "../context/AuthContext";
 import { useLanguage } from "../context/LanguageContext";
 import { translateError } from "../i18n/translations";
 import { ApiError } from "../lib/api";
+import { isStaffRole } from "../lib/roles";
 
 export function LoginPage() {
   const { login } = useAuth();
@@ -24,7 +25,7 @@ export function LoginPage() {
     setSubmitting(true);
     try {
       const user = await login(email.trim(), password);
-      navigate(user.role === "admin" ? "/admin" : "/factures/nouvelle", { replace: true });
+      navigate(isStaffRole(user.role) ? "/admin" : "/factures/nouvelle", { replace: true });
     } catch (err) {
       setError(err instanceof ApiError ? err : new ApiError(messages.auth.loginFailed));
     } finally {

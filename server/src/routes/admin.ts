@@ -1,22 +1,29 @@
 import { Router } from "express";
 import { asyncHandler } from "../lib/asyncHandler";
+import { recordAdminAction } from "../lib/audit";
 import { ensureWelcomeBonus } from "../lib/pointsLedger";
 import { generateTemporaryPassword } from "../lib/generatePassword";
-import { sendAccountApprovedEmail } from "../lib/mail";
+import { sendAccountApprovedEmail, sendAdminInviteEmail } from "../lib/mail";
 import { hashPassword } from "../lib/password";
 import { giftImagePublicPath, giftImageUpload } from "../lib/upload";
 import { adImagePublicPath, adImageUpload } from "../lib/adUpload";
+import { AdminAuditLogModel, toPublicAdminAuditLog } from "../models/AdminAuditLog";
 import { GiftModel, toPublicGift } from "../models/Gift";
 import { AdModel, toPublicAd } from "../models/Ad";
-import { toPublicUser, UserModel } from "../models/User";
+import { isStaffRole, toPublicUser, UserModel } from "../models/User";
 import { requireAuth } from "../middleware/auth";
-import { requireAdmin } from "../middleware/requireAdmin";
+import { requireAdmin, requireSuperAdmin } from "../middleware/requireAdmin";
 import { AppError } from "../middleware/errorHandler";
-import { adBodySchema, giftBodySchema } from "../validation/admin";
+import { adBodySchema, giftBodySchema, staffCreateSchema } from "../validation/admin";
 
 const router = Router();
 
 router.use(requireAuth, requireAdmin);
+
+function actorFrom(req: { authUser?: { _id: { toString(): string }; email: string; role: string } }) {
+  const user = req.authUser!;
+  return { id: user._id.toString(), email: user.email, role: user.role };
+}
 
 router.get(
   "/accounts/pending",
@@ -64,6 +71,14 @@ router.post(
       );
     }
 
+    await recordAdminAction({
+      actor: actorFrom(req),
+      action: "account.approve",
+      targetType: "user",
+      targetId: user._id.toString(),
+      summary: `Partenaire approuvé : ${user.email}`,
+    });
+
     res.json({
       user: toPublicUser(user),
       message: "Compte approuvé. Un e-mail avec le mot de passe a été envoyé.",
@@ -84,6 +99,15 @@ router.post(
 
     user.status = "rejected";
     await user.save();
+
+    await recordAdminAction({
+      actor: actorFrom(req),
+      action: "account.reject",
+      targetType: "user",
+      targetId: user._id.toString(),
+      summary: `Partenaire refusé : ${user.email}`,
+    });
+
     res.json({
       user: toPublicUser(user),
       message: "Compte refusé.",
@@ -115,6 +139,147 @@ router.get(
 );
 
 router.get(
+  "/staff",
+  requireSuperAdmin,
+  asyncHandler(async (_req, res) => {
+    const users = await UserModel.find({ role: { $in: ["admin", "super_admin"] } }).sort({
+      role: -1,
+      createdAt: 1,
+    });
+    res.json({ users: users.map(toPublicUser) });
+  }),
+);
+
+router.post(
+  "/staff",
+  requireSuperAdmin,
+  asyncHandler(async (req, res) => {
+    const parsed = staffCreateSchema.safeParse(req.body);
+    if (!parsed.success) {
+      throw new AppError(400, "Certains champs sont invalides.", "VALIDATION");
+    }
+
+    const email = parsed.data.email.toLowerCase();
+    const existing = await UserModel.findOne({ email });
+    if (existing) {
+      throw new AppError(409, "Un compte existe déjà avec cet e-mail.", "EMAIL_TAKEN");
+    }
+
+    const temporaryPassword = generateTemporaryPassword();
+    const user = await UserModel.create({
+      firstName: parsed.data.firstName,
+      surname: parsed.data.surname,
+      email,
+      phone: parsed.data.phone,
+      companyName: "SIKA Tunisie",
+      role: "admin",
+      status: "approved",
+      password: await hashPassword(temporaryPassword),
+      totalPoints: 0,
+    });
+
+    try {
+      await sendAdminInviteEmail({
+        to: user.email,
+        firstName: user.firstName,
+        password: temporaryPassword,
+      });
+    } catch (error) {
+      await user.deleteOne();
+      console.error("SMTP admin invite failed:", error);
+      throw new AppError(
+        502,
+        "Impossible d’envoyer l’e-mail d’invitation. Vérifiez la configuration SMTP.",
+        "SMTP_FAILED",
+      );
+    }
+
+    await recordAdminAction({
+      actor: actorFrom(req),
+      action: "staff.create",
+      targetType: "user",
+      targetId: user._id.toString(),
+      summary: `Administrateur créé : ${user.email}`,
+    });
+
+    res.status(201).json({
+      user: toPublicUser(user),
+      message: "Administrateur créé. Un e-mail avec le mot de passe a été envoyé.",
+    });
+  }),
+);
+
+router.post(
+  "/staff/:id/disable",
+  requireSuperAdmin,
+  asyncHandler(async (req, res) => {
+    const user = await UserModel.findById(req.params.id);
+    if (!user || !isStaffRole(user.role)) {
+      throw new AppError(404, "Administrateur introuvable.", "NOT_FOUND");
+    }
+    if (user.role === "super_admin") {
+      throw new AppError(400, "Le super administrateur ne peut pas être désactivé.", "VALIDATION");
+    }
+    if (user._id.toString() === req.authUser!._id.toString()) {
+      throw new AppError(400, "Vous ne pouvez pas désactiver votre propre compte.", "VALIDATION");
+    }
+    if (user.status === "disabled") {
+      throw new AppError(400, "Ce compte est déjà désactivé.", "VALIDATION");
+    }
+
+    user.status = "disabled";
+    await user.save();
+
+    await recordAdminAction({
+      actor: actorFrom(req),
+      action: "staff.disable",
+      targetType: "user",
+      targetId: user._id.toString(),
+      summary: `Administrateur désactivé : ${user.email}`,
+    });
+
+    res.json({ user: toPublicUser(user), message: "Administrateur désactivé." });
+  }),
+);
+
+router.post(
+  "/staff/:id/enable",
+  requireSuperAdmin,
+  asyncHandler(async (req, res) => {
+    const user = await UserModel.findById(req.params.id);
+    if (!user || user.role !== "admin") {
+      throw new AppError(404, "Administrateur introuvable.", "NOT_FOUND");
+    }
+    if (user.status !== "disabled") {
+      throw new AppError(400, "Ce compte n’est pas désactivé.", "VALIDATION");
+    }
+
+    user.status = "approved";
+    await user.save();
+
+    await recordAdminAction({
+      actor: actorFrom(req),
+      action: "staff.enable",
+      targetType: "user",
+      targetId: user._id.toString(),
+      summary: `Administrateur réactivé : ${user.email}`,
+    });
+
+    res.json({ user: toPublicUser(user), message: "Administrateur réactivé." });
+  }),
+);
+
+router.get(
+  "/audit-logs",
+  requireSuperAdmin,
+  asyncHandler(async (req, res) => {
+    const limit = Math.min(Number(req.query.limit) || 100, 300);
+    const entries = await AdminAuditLogModel.find().sort({ createdAt: -1 }).limit(limit);
+    res.json({ entries: entries.map(toPublicAdminAuditLog) });
+  }),
+);
+
+router.get(
   "/gifts",
   asyncHandler(async (_req, res) => {
     const gifts = await GiftModel.find().sort({ sortOrder: 1, pointsRequired: 1 });
@@ -139,6 +304,14 @@ router.post(
       sortOrder: parsed.data.sortOrder ?? count,
       active: parsed.data.active ?? true,
       imageUrl: req.file ? giftImagePublicPath(req.file.filename) : "",
+    });
+
+    await recordAdminAction({
+      actor: actorFrom(req),
+      action: "gift.create",
+      targetType: "gift",
+      targetId: gift._id.toString(),
+      summary: `Cadeau créé : ${gift.name}`,
     });
 
     res.status(201).json({ gift: toPublicGift(gift) });
@@ -167,6 +340,15 @@ router.patch(
     if (req.file) gift.imageUrl = giftImagePublicPath(req.file.filename);
 
     await gift.save();
+
+    await recordAdminAction({
+      actor: actorFrom(req),
+      action: "gift.update",
+      targetType: "gift",
+      targetId: gift._id.toString(),
+      summary: `Cadeau modifié : ${gift.name}`,
+    });
+
     res.json({ gift: toPublicGift(gift) });
   }),
 );
@@ -180,6 +362,15 @@ router.post(
     }
     gift.active = false;
     await gift.save();
+
+    await recordAdminAction({
+      actor: actorFrom(req),
+      action: "gift.hide",
+      targetType: "gift",
+      targetId: gift._id.toString(),
+      summary: `Cadeau masqué : ${gift.name}`,
+    });
+
     res.json({ gift: toPublicGift(gift) });
   }),
 );
@@ -193,6 +384,15 @@ router.post(
     }
     gift.active = true;
     await gift.save();
+
+    await recordAdminAction({
+      actor: actorFrom(req),
+      action: "gift.restore",
+      targetType: "gift",
+      targetId: gift._id.toString(),
+      summary: `Cadeau réactivé : ${gift.name}`,
+    });
+
     res.json({ gift: toPublicGift(gift) });
   }),
 );
@@ -236,6 +436,14 @@ router.post(
       imageUrl: imageUrlDesktop,
     });
 
+    await recordAdminAction({
+      actor: actorFrom(req),
+      action: "ad.create",
+      targetType: "ad",
+      targetId: ad._id.toString(),
+      summary: `Publicité créée : ${ad.title}`,
+    });
+
     res.status(201).json({ ad: toPublicAd(ad) });
   }),
 );
@@ -275,6 +483,15 @@ router.patch(
     }
 
     await ad.save();
+
+    await recordAdminAction({
+      actor: actorFrom(req),
+      action: "ad.update",
+      targetType: "ad",
+      targetId: ad._id.toString(),
+      summary: `Publicité modifiée : ${ad.title}`,
+    });
+
     res.json({ ad: toPublicAd(ad) });
   }),
 );
@@ -288,6 +505,15 @@ router.post(
     }
     ad.active = false;
     await ad.save();
+
+    await recordAdminAction({
+      actor: actorFrom(req),
+      action: "ad.hide",
+      targetType: "ad",
+      targetId: ad._id.toString(),
+      summary: `Publicité masquée : ${ad.title}`,
+    });
+
     res.json({ ad: toPublicAd(ad) });
   }),
 );
@@ -301,6 +527,15 @@ router.post(
     }
     ad.active = true;
     await ad.save();
+
+    await recordAdminAction({
+      actor: actorFrom(req),
+      action: "ad.restore",
+      targetType: "ad",
+      targetId: ad._id.toString(),
+      summary: `Publicité réactivée : ${ad.title}`,
+    });
+
     res.json({ ad: toPublicAd(ad) });
   }),
 );
