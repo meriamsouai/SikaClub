@@ -87,8 +87,8 @@ export function HistoryPage() {
 
       <div className="rounded-lg border border-sika-yellow/60 bg-sika-yellow-soft/40 px-4 py-3 text-sm leading-6 text-ink">
         {messages.history.supportNote}{" "}
-        <a href="mailto:sika@mail.tn" className="font-semibold text-sika-red-dark hover:underline">
-          sika@mail.tn
+        <a href="mailto:souai.walid@tn.sika.com" className="font-semibold text-sika-red-dark hover:underline">
+        souai.walid@tn.sika.com
         </a>
         .
       </div>
