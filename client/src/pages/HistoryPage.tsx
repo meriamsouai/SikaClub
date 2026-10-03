@@ -80,8 +80,7 @@ export function HistoryPage() {
   return (
     <div className="space-y-6">
       <div>
-        <p className="text-sm font-medium uppercase tracking-[0.14em] text-muted">{messages.nav.history}</p>
-        <h1 className="mt-2 text-3xl font-semibold tracking-tight">{messages.nav.history}</h1>
+        <h1 className="mt-2 text-3xl uppercase font-semibold tracking-tight">{messages.nav.history}</h1>
         <p className="mt-2 max-w-2xl text-sm leading-6 text-muted">{tabDescription}</p>
       </div>
 
