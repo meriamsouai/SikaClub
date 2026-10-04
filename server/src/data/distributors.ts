@@ -7,6 +7,8 @@ export const DISTRIBUTORS = [
   "SEBAC",
   "SOBAQUE",
   "SOQUAGEN",
+  "ISOTECH",
+  "STETS",
 ] as const;
 
 export type Distributor = (typeof DISTRIBUTORS)[number];
