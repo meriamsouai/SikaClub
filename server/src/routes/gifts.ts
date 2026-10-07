@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { asyncHandler } from "../lib/asyncHandler";
 import { recordAdminAction } from "../lib/audit";
-import { sendGiftRedeemedEmail } from "../lib/mail";
+import { sendGiftRedeemedEmail, sendGiftRedemptionAdminEmail } from "../lib/mail";
 import { recordRedemptionDebit, recordRedemptionRefund } from "../lib/pointsLedger";
 import { nextSequentialReference } from "../models/Counter";
 import { GiftModel, toPublicGift } from "../models/Gift";
@@ -87,13 +87,24 @@ router.post(
     });
 
     try {
-      await sendGiftRedeemedEmail({
-        to: user.email,
-        firstName: user.firstName,
-        giftName: gift.name,
-        reference,
-        pointsSpent: gift.pointsRequired,
-      });
+      const admins = await UserModel.find({ role: { $in: ["admin", "super_admin"] } }).select("email");
+      await Promise.all([
+        sendGiftRedeemedEmail({
+          to: user.email,
+          firstName: user.firstName,
+          giftName: gift.name,
+          reference,
+          pointsSpent: gift.pointsRequired,
+        }),
+        sendGiftRedemptionAdminEmail({
+          to: admins.map((admin) => admin.email),
+          firstName: user.firstName,
+          surname: user.surname,
+          giftName: gift.name,
+          reference,
+          pointsSpent: gift.pointsRequired,
+        }),
+      ]);
     } catch (err) {
       console.error("Failed to send gift redemption email", err);
     }

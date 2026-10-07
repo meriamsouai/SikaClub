@@ -23,6 +23,13 @@ export async function ensureWelcomeBonus(user: UserDocument) {
   });
 }
 
+export async function removeWelcomeBonus(user: UserDocument) {
+  const existing = await PointEntryModel.findOneAndDelete({ user: user._id, type: "welcome" });
+  if (!existing) return;
+  user.totalPoints = Math.max(0, user.totalPoints - existing.points);
+  await user.save();
+}
+
 export async function recordInvoicePoints(input: {
   userId: UserDocument["_id"];
   invoiceId: string;

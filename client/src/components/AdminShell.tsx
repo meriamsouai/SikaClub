@@ -3,6 +3,7 @@ import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { useLanguage } from "../context/LanguageContext";
 import { isSuperAdmin } from "../lib/roles";
+import { getAdminRedemptions, getPendingAccounts, getPendingInvoices } from "../lib/api";
 import { AuthFooter } from "./AuthFooter";
 
 function navClass(isActive: boolean) {
@@ -19,6 +20,7 @@ export function AdminShell() {
   const navigate = useNavigate();
   const location = useLocation();
   const [menuOpen, setMenuOpen] = useState(false);
+  const [notifications, setNotifications] = useState({ pending: 0, invoices: 0, redemptions: 0 });
 
   const navItems = [
     { to: "/admin", label: messages.admin.pending },
@@ -38,6 +40,51 @@ export function AdminShell() {
   useEffect(() => {
     setMenuOpen(false);
   }, [location.pathname]);
+
+  useEffect(() => {
+    let active = true;
+    const loadNotifications = () =>
+      Promise.all([getPendingAccounts(), getPendingInvoices(), getAdminRedemptions()])
+      .then(([accounts, invoices, redemptions]) => {
+        if (active) {
+          setNotifications({
+            pending: accounts.users.length,
+            invoices: invoices.invoices.length,
+            redemptions: redemptions.redemptions.filter((item) => item.status === "en_cours").length,
+          });
+        }
+      })
+      .catch((error) => {
+        console.error("Failed to load admin notification counts:", error);
+      });
+    void loadNotifications();
+    const interval = window.setInterval(() => void loadNotifications(), 30_000);
+    return () => {
+      active = false;
+      window.clearInterval(interval);
+    };
+  }, [location.pathname]);
+
+  function notificationCount(path: string) {
+    if (path === "/admin") return notifications.pending;
+    if (path === "/admin/factures") return notifications.invoices;
+    if (path === "/admin/echanges") return notifications.redemptions;
+    return 0;
+  }
+
+  function renderNavLabel(item: (typeof navItems)[number]) {
+    const count = notificationCount(item.to);
+    return (
+      <span className="flex min-w-0 items-center gap-2">
+        <span className="truncate">{item.label}</span>
+        {count > 0 ? (
+          <span className="inline-flex min-w-5 items-center justify-center rounded-full bg-red-600 px-1.5 py-0.5 text-[10px] font-bold leading-none text-white">
+            {count}
+          </span>
+        ) : null}
+      </span>
+    );
+  }
 
   async function handleLogout() {
     await logout();
@@ -72,7 +119,7 @@ export function AdminShell() {
                   <span className="mx-auto flex h-7 w-7 shrink-0 items-center justify-center rounded bg-sika-yellow-soft text-xs font-bold uppercase text-sika-red-dark group-hover:hidden">
                     {item.label.trim().charAt(0)}
                   </span>
-                  <span className="hidden truncate group-hover:inline">{item.label}</span>
+                  <span className="hidden group-hover:inline">{renderNavLabel(item)}</span>
                 </NavLink>
               ))}
             </nav>
@@ -152,7 +199,7 @@ export function AdminShell() {
                   end={item.to === "/admin"}
                   className={({ isActive }) => `${navClass(isActive)} px-4`}
                 >
-                  {item.label}
+                  {renderNavLabel(item)}
                 </NavLink>
               ))}
             </nav>

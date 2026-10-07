@@ -205,6 +205,33 @@ export async function sendAccountRequestEmail(input: {
   });
 }
 
+export async function sendAccountRequestReceivedEmail(input: {
+  to: string;
+  firstName: string;
+}) {
+  const transport = createTransport();
+
+  await transport.sendMail({
+    from: mailFrom(),
+    to: input.to,
+    subject: "Votre demande de compte SIKA a bien été reçue",
+    text: [
+      `Bonjour ${input.firstName},`,
+      "",
+      "Nous avons bien reçu votre demande de création de compte.",
+      "Notre service va l’étudier et vous répondra dès que possible.",
+      "",
+      "SIKA Tunisie",
+    ].join("\n"),
+    html: `
+      <p>Bonjour ${input.firstName},</p>
+      <p>Nous avons bien reçu votre demande de création de compte.</p>
+      <p>Notre service va l’étudier et vous répondra dès que possible.</p>
+      <p>SIKA Tunisie</p>
+    `,
+  });
+}
+
 export async function sendInvoiceSubmittedAdminEmail(input: {
   to: string[];
   firstName: string;
@@ -271,6 +298,83 @@ export async function sendInvoiceSubmittedEmail(input: {
       <p>Bonjour ${input.firstName},</p>
       <p>Votre facture <strong>${input.reference}</strong> a été soumise avec succès le ${date}.</p>
       <p><a href="${historyUrl}">Consulter le statut dans votre historique</a></p>
+      <p>SIKA Tunisie</p>
+    `,
+  });
+}
+
+export async function sendInvoiceDecisionEmail(input: {
+  to: string;
+  firstName: string;
+  reference: string;
+  status: "approved" | "rejected";
+  pointsAwarded: number;
+}) {
+  const transport = createTransport();
+  const historyUrl = `${env.clientOrigin}/historique`;
+  const approved = input.status === "approved";
+  const decision = approved ? "approuvée" : "refusée";
+
+  await transport.sendMail({
+    from: mailFrom(),
+    to: input.to,
+    subject: `Votre facture ${input.reference} a été ${decision}`,
+    text: [
+      `Bonjour ${input.firstName},`,
+      "",
+      `Votre facture ${input.reference} a été ${decision}.`,
+      `Points reçus : ${input.pointsAwarded}.`,
+      "",
+      `Consultez votre historique : ${historyUrl}`,
+      "",
+      "SIKA Tunisie",
+    ].join("\n"),
+    html: `
+      <p>Bonjour ${input.firstName},</p>
+      <p>Votre facture <strong>${input.reference}</strong> a été ${decision}.</p>
+      <p><strong>Points reçus :</strong> ${input.pointsAwarded}</p>
+      <p><a href="${historyUrl}">Consulter votre historique</a></p>
+      <p>SIKA Tunisie</p>
+    `,
+  });
+}
+
+export async function sendGiftRedemptionAdminEmail(input: {
+  to: string[];
+  firstName: string;
+  surname: string;
+  giftName: string;
+  reference: string;
+  pointsSpent: number;
+}) {
+  if (input.to.length === 0) return;
+
+  const transport = createTransport();
+  const adminUrl = `${env.clientOrigin}/admin/echanges`;
+  const fullName = `${input.firstName} ${input.surname}`;
+
+  await transport.sendMail({
+    from: mailFrom(),
+    to: mailFrom(),
+    bcc: input.to,
+    subject: `Nouvel échange cadeau à traiter — ${input.reference}`,
+    text: [
+      "Bonjour,",
+      "",
+      `${fullName} a échangé ses points contre le cadeau ${input.giftName}.`,
+      `Référence : ${input.reference}`,
+      `Points utilisés : ${input.pointsSpent}`,
+      "",
+      `Consultez et suivez cette demande ici : ${adminUrl}`,
+      "",
+      "SIKA Tunisie",
+    ].join("\n"),
+    html: `
+      <p>Bonjour,</p>
+      <p><strong>${fullName}</strong> a échangé ses points contre le cadeau <strong>${input.giftName}</strong>.</p>
+      <p><strong>Référence :</strong> ${input.reference}<br/>
+      <strong>Points utilisés :</strong> ${input.pointsSpent}</p>
+      <p><a href="${adminUrl}">Suivre la demande</a></p>
       <p>SIKA Tunisie</p>
     `,
   });

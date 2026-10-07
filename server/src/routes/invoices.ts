@@ -3,7 +3,11 @@ import { asyncHandler } from "../lib/asyncHandler";
 import { recordAdminAction } from "../lib/audit";
 import { invoiceFilePublicPath, invoiceFileUpload, MAX_INVOICE_FILES } from "../lib/invoiceUpload";
 import { recordInvoicePoints } from "../lib/pointsLedger";
-import { sendInvoiceSubmittedAdminEmail, sendInvoiceSubmittedEmail } from "../lib/mail";
+import {
+  sendInvoiceDecisionEmail,
+  sendInvoiceSubmittedAdminEmail,
+  sendInvoiceSubmittedEmail,
+} from "../lib/mail";
 import { nextInvoiceReference } from "../models/Counter";
 import { InvoiceModel, toPublicInvoice } from "../models/Invoice";
 import { allocateProductPoints, igolflexPointsForSeaux, ProductModel, toPublicProduct } from "../models/Product";
@@ -205,6 +209,19 @@ router.post(
       label: productNames || "Facture approuvée",
     });
 
+    try {
+      await sendInvoiceDecisionEmail({
+        to: user.email,
+        firstName: user.firstName,
+        reference: invoice.reference,
+        status: "approved",
+        pointsAwarded: invoice.pointsAwarded,
+      });
+    } catch (error) {
+      console.error("SMTP invoice approval notification failed:", error);
+      throw new AppError(502, "La facture a été approuvée, mais l’e-mail de notification n’a pas pu être envoyé.", "SMTP_FAILED");
+    }
+
     await recordAdminAction({
       actor: actorFrom(req),
       action: "invoice.approve",
@@ -240,6 +257,21 @@ router.post(
     await invoice.save();
 
     const user = await UserModel.findById(invoice.user);
+
+    if (user) {
+      try {
+        await sendInvoiceDecisionEmail({
+          to: user.email,
+          firstName: user.firstName,
+          reference: invoice.reference,
+          status: "rejected",
+          pointsAwarded: 0,
+        });
+      } catch (error) {
+        console.error("SMTP invoice rejection notification failed:", error);
+        throw new AppError(502, "La facture a été refusée, mais l’e-mail de notification n’a pas pu être envoyé.", "SMTP_FAILED");
+      }
+    }
 
     await recordAdminAction({
       actor: actorFrom(req),

@@ -89,10 +89,10 @@ export function AdminClientsPage() {
     void load();
   }, [load]);
 
-  const { activeUsers, bannedUsers } = useMemo(() => {
+  const { activeUsers, bannedUsers, rejectedUsers } = useMemo(() => {
     const matched = users.filter((user) => matchesQuery(user, query));
     const active = sortClients(
-      matched.filter((user) => user.status !== "banned"),
+      matched.filter((user) => user.status !== "banned" && user.status !== "rejected"),
       sortBy,
       locale,
     );
@@ -101,7 +101,12 @@ export function AdminClientsPage() {
       sortBy === "status" ? "name" : sortBy,
       locale,
     );
-    return { activeUsers: active, bannedUsers: banned };
+    const rejected = sortClients(
+      matched.filter((user) => user.status === "rejected"),
+      sortBy === "status" ? "name" : sortBy,
+      locale,
+    );
+    return { activeUsers: active, bannedUsers: banned, rejectedUsers: rejected };
   }, [users, query, sortBy, locale]);
 
   async function togglePoints(userId: string) {
@@ -157,7 +162,12 @@ export function AdminClientsPage() {
           <td className="px-4 py-3">{user.companyName}</td>
           <td className="px-4 py-3">{user.email}</td>
           <td className="px-4 py-3">{user.phone}</td>
-          <td className="px-4 py-3">{copy.statusLabels[user.status]}</td>
+          <td className="px-4 py-3">
+            <span className="inline-flex items-center gap-2">
+              <span className={`h-2.5 w-2.5 rounded-full ${user.status === "approved" ? "bg-emerald-500" : user.status === "banned" ? "bg-red-600" : "bg-slate-400"}`} />
+              {copy.statusLabels[user.status]}
+            </span>
+          </td>
           <td className="px-4 py-3 font-semibold tabular-nums text-sika-red">
             {formatPoints(user.totalPoints, locale)}
           </td>
@@ -244,7 +254,7 @@ export function AdminClientsPage() {
     ));
   }
 
-  const hasResults = activeUsers.length > 0 || bannedUsers.length > 0;
+  const hasResults = activeUsers.length > 0 || bannedUsers.length > 0 || rejectedUsers.length > 0;
   const banIsUnban = banTarget?.status === "banned";
 
   return (
@@ -340,6 +350,33 @@ export function AdminClientsPage() {
                         </tr>
                       </thead>
                       <tbody>{renderClientRows(bannedUsers, true)}</tbody>
+                    </table>
+                  </div>
+                </div>
+              ) : null}
+              {rejectedUsers.length > 0 ? (
+                <div className="space-y-3">
+                  <div className="flex items-center gap-3">
+                    <div className="h-px flex-1 bg-line" />
+                    <h2 className="text-sm font-semibold uppercase tracking-wide text-red-700">
+                      {copy.rejectedClientsSection} ({rejectedUsers.length})
+                    </h2>
+                    <div className="h-px flex-1 bg-line" />
+                  </div>
+                  <div className="overflow-x-auto rounded-lg border border-red-200 bg-red-50/40">
+                    <table className="min-w-full text-left text-sm">
+                      <thead className="border-b border-red-200 bg-red-100/60 text-xs uppercase tracking-wide text-red-800">
+                        <tr>
+                          <th className="px-4 py-3">{copy.name}</th>
+                          <th className="px-4 py-3">{messages.auth.company}</th>
+                          <th className="px-4 py-3">{messages.auth.email}</th>
+                          <th className="px-4 py-3">{messages.auth.phone}</th>
+                          <th className="px-4 py-3">{copy.status}</th>
+                          <th className="px-4 py-3">{copy.pointsCurrent}</th>
+                          <th className="px-4 py-3">{copy.actions}</th>
+                        </tr>
+                      </thead>
+                      <tbody>{renderClientRows(rejectedUsers, true)}</tbody>
                     </table>
                   </div>
                 </div>

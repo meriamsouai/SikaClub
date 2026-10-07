@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { asyncHandler } from "../lib/asyncHandler";
 import { recordAdminAction } from "../lib/audit";
-import { ensureWelcomeBonus, lifetimePointsByUserIds } from "../lib/pointsLedger";
+import { ensureWelcomeBonus, lifetimePointsByUserIds, removeWelcomeBonus } from "../lib/pointsLedger";
 import { generateTemporaryPassword } from "../lib/generatePassword";
 import { sendAccountApprovedEmail, sendAccountRejectedEmail, sendAdminInviteEmail } from "../lib/mail";
 import { hashPassword } from "../lib/password";
@@ -97,6 +97,7 @@ router.post(
       throw new AppError(400, "Ce compte n’est pas en attente.", "VALIDATION");
     }
 
+    await removeWelcomeBonus(user);
     user.status = "rejected";
     await user.save();
 

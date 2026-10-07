@@ -4,7 +4,6 @@ import rateLimit from "express-rate-limit";
 import { asyncHandler } from "../lib/asyncHandler";
 import { clearAuthCookies, setAuthCookies } from "../lib/cookies";
 import { hashPassword, verifyPassword } from "../lib/password";
-import { ensureWelcomeBonus } from "../lib/pointsLedger";
 import { createRefreshToken, hashToken, REFRESH_COOKIE, signAccessToken } from "../lib/tokens";
 import { PasswordResetModel } from "../models/PasswordReset";
 import { RefreshTokenModel } from "../models/RefreshToken";
@@ -13,7 +12,7 @@ import { requireAuth } from "../middleware/auth";
 import { AppError } from "../middleware/errorHandler";
 import { validateBody } from "../middleware/validate";
 import { env } from "../config/env";
-import { sendAccountRequestEmail } from "../lib/mail";
+import { sendAccountRequestEmail, sendAccountRequestReceivedEmail } from "../lib/mail";
 import {
   changePasswordSchema,
   forgotPasswordSchema,
@@ -74,16 +73,20 @@ router.post(
       status: "pending",
       totalPoints: 0,
     });
-    await ensureWelcomeBonus(user);
-
     const admins = await UserModel.find({ role: { $in: ["admin", "super_admin"] } }).select("email");
     try {
-      await sendAccountRequestEmail({
-        to: admins.map((admin) => admin.email),
-        firstName: user.firstName,
-        surname: user.surname,
-        companyName: user.companyName,
-      });
+      await Promise.all([
+        sendAccountRequestReceivedEmail({
+          to: user.email,
+          firstName: user.firstName,
+        }),
+        sendAccountRequestEmail({
+          to: admins.map((admin) => admin.email),
+          firstName: user.firstName,
+          surname: user.surname,
+          companyName: user.companyName,
+        }),
+      ]);
     } catch (error) {
       console.error("SMTP account request notification failed:", error);
       throw new AppError(

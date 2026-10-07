@@ -335,7 +335,12 @@ export function HistoryPage() {
                       <td className="px-4 py-3 font-semibold text-sika-red">{item.reference}</td>
                       <td className="px-4 py-3">{item.giftName}</td>
                       <td className="px-4 py-3 tabular-nums">{formatPoints(item.pointsSpent, locale)}</td>
-                      <td className="px-4 py-3 font-medium">{giftsCopy.statusLabels[item.status]}</td>
+                      <td className="px-4 py-3 font-medium">
+                        <span className="inline-flex items-center gap-2">
+                          <span className={`h-2.5 w-2.5 rounded-full ${item.status === "claimed" ? "bg-emerald-500" : item.status === "cancelled" ? "bg-red-600" : "bg-orange-400"}`} />
+                          {giftsCopy.statusLabels[item.status]}
+                        </span>
+                      </td>
                       <td className="px-4 py-3 whitespace-nowrap">
                         {new Date(item.createdAt).toLocaleDateString(locale === "fr" ? "fr-FR" : "en-GB")}
                       </td>
