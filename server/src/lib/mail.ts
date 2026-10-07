@@ -10,12 +10,16 @@ function createTransport() {
     host: env.smtpHost,
     port: env.smtpPort,
     secure: env.smtpPort === 465,
-    requireTLS: env.smtpPort === 587,
+    requireTLS: env.smtpPort === 587 || env.smtpPort === 2525,
     auth: {
       user: env.smtpUser,
       pass: env.smtpPass,
     },
-  });
+    family: 4,                // force IPv4
+    connectionTimeout: 10000, // fail fast instead of hanging
+    greetingTimeout: 10000,
+    socketTimeout: 15000,
+  } as any);
 }
 
 export async function sendAccountApprovedEmail(input: {
