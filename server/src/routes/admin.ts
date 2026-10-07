@@ -3,7 +3,7 @@ import { asyncHandler } from "../lib/asyncHandler";
 import { recordAdminAction } from "../lib/audit";
 import { ensureWelcomeBonus, lifetimePointsByUserIds } from "../lib/pointsLedger";
 import { generateTemporaryPassword } from "../lib/generatePassword";
-import { sendAccountApprovedEmail, sendAdminInviteEmail } from "../lib/mail";
+import { sendAccountApprovedEmail, sendAccountRejectedEmail, sendAdminInviteEmail } from "../lib/mail";
 import { hashPassword } from "../lib/password";
 import { giftImagePublicPath, giftImageUpload } from "../lib/upload";
 import { adImagePublicPath, adImageUpload } from "../lib/adUpload";
@@ -99,6 +99,22 @@ router.post(
 
     user.status = "rejected";
     await user.save();
+
+    try {
+      await sendAccountRejectedEmail({
+        to: user.email,
+        firstName: user.firstName,
+      });
+    } catch (error) {
+      user.status = "pending";
+      await user.save();
+      console.error("SMTP reject failed:", error);
+      throw new AppError(
+        502,
+        "Impossible d’envoyer l’e-mail de refus. Vérifiez la configuration SMTP.",
+        "SMTP_FAILED",
+      );
+    }
 
     await recordAdminAction({
       actor: actorFrom(req),

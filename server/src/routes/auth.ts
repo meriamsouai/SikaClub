@@ -13,6 +13,7 @@ import { requireAuth } from "../middleware/auth";
 import { AppError } from "../middleware/errorHandler";
 import { validateBody } from "../middleware/validate";
 import { env } from "../config/env";
+import { sendAccountRequestEmail } from "../lib/mail";
 import {
   changePasswordSchema,
   forgotPasswordSchema,
@@ -74,6 +75,23 @@ router.post(
       totalPoints: 0,
     });
     await ensureWelcomeBonus(user);
+
+    const admins = await UserModel.find({ role: { $in: ["admin", "super_admin"] } }).select("email");
+    try {
+      await sendAccountRequestEmail({
+        to: admins.map((admin) => admin.email),
+        firstName: user.firstName,
+        surname: user.surname,
+        companyName: user.companyName,
+      });
+    } catch (error) {
+      console.error("SMTP account request notification failed:", error);
+      throw new AppError(
+        502,
+        "Votre demande a été enregistrée, mais la notification des administrateurs a échoué.",
+        "SMTP_FAILED",
+      );
+    }
 
     res.status(201).json({
       message:

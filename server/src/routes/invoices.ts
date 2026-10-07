@@ -3,6 +3,7 @@ import { asyncHandler } from "../lib/asyncHandler";
 import { recordAdminAction } from "../lib/audit";
 import { invoiceFilePublicPath, invoiceFileUpload, MAX_INVOICE_FILES } from "../lib/invoiceUpload";
 import { recordInvoicePoints } from "../lib/pointsLedger";
+import { sendInvoiceSubmittedAdminEmail, sendInvoiceSubmittedEmail } from "../lib/mail";
 import { nextInvoiceReference } from "../models/Counter";
 import { InvoiceModel, toPublicInvoice } from "../models/Invoice";
 import { allocateProductPoints, igolflexPointsForSeaux, ProductModel, toPublicProduct } from "../models/Product";
@@ -99,6 +100,32 @@ router.post(
       pointsAwarded: 0,
       reference,
     });
+
+    const admins = await UserModel.find({ role: { $in: ["admin", "super_admin"] } }).select("email");
+    try {
+      await Promise.all([
+        sendInvoiceSubmittedAdminEmail({
+          to: admins.map((admin) => admin.email),
+          firstName: req.authUser!.firstName,
+          surname: req.authUser!.surname,
+          reference: invoice.reference,
+          submittedAt: invoice.createdAt,
+        }),
+        sendInvoiceSubmittedEmail({
+          to: req.authUser!.email,
+          firstName: req.authUser!.firstName,
+          reference: invoice.reference,
+          submittedAt: invoice.createdAt,
+        }),
+      ]);
+    } catch (error) {
+      console.error("SMTP invoice submission notification failed:", error);
+      throw new AppError(
+        502,
+        "La facture a été enregistrée, mais l’envoi des notifications a échoué.",
+        "SMTP_FAILED",
+      );
+    }
 
     res.status(201).json({
       invoice: toPublicInvoice(invoice),

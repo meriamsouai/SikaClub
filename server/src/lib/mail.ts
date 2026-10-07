@@ -161,3 +161,145 @@ export async function sendAdminInviteEmail(input: {
     `,
   });
 }
+
+function mailFrom() {
+  return env.smtpFrom && env.smtpFrom.includes("@")
+    ? env.smtpFrom.replace(/^["']|["']$/g, "")
+    : env.smtpUser;
+}
+
+export async function sendAccountRequestEmail(input: {
+  to: string[];
+  firstName: string;
+  surname: string;
+  companyName: string;
+}) {
+  if (input.to.length === 0) return;
+
+  const transport = createTransport();
+  const adminUrl = `${env.clientOrigin}/admin`;
+  const fullName = `${input.firstName} ${input.surname}`;
+
+  await transport.sendMail({
+    from: mailFrom(),
+    to: mailFrom(),
+    bcc: input.to,
+    subject: "Nouvelle demande de création de compte — Club Etancheurs SIKA",
+    text: [
+      "Bonjour,",
+      "",
+      `Une nouvelle personne vient de demander l'accès au portail partenaires SIKA : ${fullName}.`,
+      `Entreprise : ${input.companyName || "Non renseignée"}`,
+      "",
+      `Consultez et traitez la demande ici : ${adminUrl}`,
+      "",
+      "SIKA Tunisie",
+    ].join("\n"),
+    html: `
+      <p>Bonjour,</p>
+      <p>Une nouvelle personne vient de demander l'accès au portail partenaires SIKA : <strong>${fullName}</strong>.</p>
+      <p><strong>Entreprise :</strong> ${input.companyName || "Non renseignée"}</p>
+      <p><a href="${adminUrl}">Consulter la demande</a></p>
+      <p>SIKA Tunisie</p>
+    `,
+  });
+}
+
+export async function sendInvoiceSubmittedAdminEmail(input: {
+  to: string[];
+  firstName: string;
+  surname: string;
+  reference: string;
+  submittedAt: Date;
+}) {
+  if (input.to.length === 0) return;
+
+  const transport = createTransport();
+  const adminUrl = `${env.clientOrigin}/admin/factures`;
+  const fullName = `${input.firstName} ${input.surname}`;
+  const date = input.submittedAt.toLocaleString("fr-FR");
+
+  await transport.sendMail({
+    from: mailFrom(),
+    to: mailFrom(),
+    bcc: input.to,
+    subject: `Nouvelle facture soumise — ${input.reference}`,
+    text: [
+      "Bonjour,",
+      "",
+      `${fullName} vient de soumettre la facture ${input.reference}.`,
+      `Date de soumission : ${date}`,
+      "",
+      `Consultez la facture ici : ${adminUrl}`,
+      "",
+      "SIKA Tunisie",
+    ].join("\n"),
+    html: `
+      <p>Bonjour,</p>
+      <p><strong>${fullName}</strong> vient de soumettre la facture <strong>${input.reference}</strong>.</p>
+      <p><strong>Date de soumission :</strong> ${date}</p>
+      <p><a href="${adminUrl}">Consulter la facture</a></p>
+      <p>SIKA Tunisie</p>
+    `,
+  });
+}
+
+export async function sendInvoiceSubmittedEmail(input: {
+  to: string;
+  firstName: string;
+  reference: string;
+  submittedAt: Date;
+}) {
+  const transport = createTransport();
+  const historyUrl = `${env.clientOrigin}/historique`;
+  const date = input.submittedAt.toLocaleString("fr-FR");
+
+  await transport.sendMail({
+    from: mailFrom(),
+    to: input.to,
+    subject: `Votre facture ${input.reference} a été soumise`,
+    text: [
+      `Bonjour ${input.firstName},`,
+      "",
+      `Votre facture ${input.reference} a été soumise avec succès le ${date}.`,
+      "",
+      `Vous pouvez consulter son statut dans votre historique : ${historyUrl}`,
+      "",
+      "SIKA Tunisie",
+    ].join("\n"),
+    html: `
+      <p>Bonjour ${input.firstName},</p>
+      <p>Votre facture <strong>${input.reference}</strong> a été soumise avec succès le ${date}.</p>
+      <p><a href="${historyUrl}">Consulter le statut dans votre historique</a></p>
+      <p>SIKA Tunisie</p>
+    `,
+  });
+}
+
+export async function sendAccountRejectedEmail(input: {
+  to: string;
+  firstName: string;
+}) {
+  const transport = createTransport();
+
+  await transport.sendMail({
+    from: mailFrom(),
+    to: input.to,
+    subject: "Votre demande de compte SIKA a été refusée",
+    text: [
+      `Bonjour ${input.firstName},`,
+      "",
+      "Nous sommes désolés de vous informer que votre demande de création de compte a été refusée.",
+      "",
+      "Si vous avez une question ou rencontrez un problème, vous pouvez contacter notre service en répondant directement à cet e-mail.",
+      "",
+      "SIKA Tunisie",
+    ].join("\n"),
+    html: `
+      <p>Bonjour ${input.firstName},</p>
+      <p>Nous sommes désolés de vous informer que votre demande de création de compte a été refusée.</p>
+      <p>Si vous avez une question ou rencontrez un problème, vous pouvez contacter notre service en répondant directement à cet e-mail.</p>
+      <p>SIKA Tunisie</p>
+    `,
+  });
+}
